@@ -54,9 +54,9 @@ function runtimeMode(): RuntimeFactoryOptions["mode"] {
   return mode;
 }
 
-function loadWorkflowDefinition(): WorkflowDefinition {
+function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
   return YAML.parse(
-    readFileSync(join(process.cwd(), "workflows", "test-case-gen.yaml"), "utf8"),
+    readFileSync(join(process.cwd(), "workflows", `${name}.yaml`), "utf8"),
   ) as WorkflowDefinition;
 }
 
@@ -75,7 +75,7 @@ function parseFeatureDir(featureDir: string): {
 
 if (!command || command === "help") {
   console.log(
-    "kata-agent commands: test-case-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
+    "kata-agent commands: test-case-gen, ui-script-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
   );
   process.exit(0);
 }
@@ -99,6 +99,30 @@ if (command === "test-case-gen") {
     definition: loadWorkflowDefinition(),
     runId,
     sourceUrl,
+  });
+  console.log(
+    JSON.stringify(
+      { runId, status: result.state.status, currentNode: result.state.currentNode },
+      null,
+      2,
+    ),
+  );
+  process.exit(0);
+}
+
+if (command === "ui-script-gen") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  const feature = requireArg("--feature");
+  const testSpecPath = requireArg("--test-spec");
+  const runId = argValue("--run") ?? randomUUID();
+  const mode = runtimeMode();
+  const { executor } = createRuntimeServices({ rootDir, mode });
+  const result = await executor.start({
+    location: { rootDir, project, feature },
+    definition: loadWorkflowDefinition("ui-script-gen"),
+    runId,
+    inputs: { testSpecPath, mode },
   });
   console.log(
     JSON.stringify(
