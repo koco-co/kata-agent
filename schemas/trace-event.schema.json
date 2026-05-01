@@ -3,40 +3,21 @@
   "$id": "https://kata-agent.local/schemas/trace-event.schema.json",
   "title": "TraceEvent",
   "type": "object",
-  "required": [
-    "runId",
-    "nodeId",
-    "type",
-    "at"
-  ],
+  "required": ["runId", "nodeId", "type", "at"],
   "properties": {
-    "runId": {
-      "type": "string"
-    },
-    "nodeId": {
-      "type": "string"
-    },
+    "runId": { "type": "string" },
+    "nodeId": { "type": "string" },
     "type": {
       "type": "string",
-      "enum": [
-        "enter",
-        "exit",
-        "gate-passed",
-        "gate-failed",
-        "node-skipped",
-        "agent-call",
-        "provider-call",
-        "provider-cost-summary",
-        "plugin-action",
-        "artifact-write",
-        "knowledge-consult",
-        "knowledge-propose",
-        "human-import"
-      ]
+      "enum": ["enter", "exit", "gate-passed", "gate-failed", "node-skipped", "agent-call", "provider-call", "provider-cost-summary", "plugin-action", "artifact-write", "knowledge-consult", "knowledge-propose", "human-import"]
     },
-    "at": {
-      "type": "string"
-    }
+    "actionId": { "type": "string" },
+    "gateId": { "type": "string" },
+    "artifactRefs": { "type": "array" },
+    "providerUsage": { "type": "object" },
+    "message": { "type": "string" },
+    "details": { "type": "object" },
+    "at": { "type": "string" }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

@@ -3,57 +3,32 @@
   "$id": "https://kata-agent.local/schemas/workflow-run-state.schema.json",
   "title": "WorkflowRunState",
   "type": "object",
-  "required": [
-    "workflowId",
-    "runId",
-    "status",
-    "nodes"
-  ],
+  "required": ["workflowId", "runId", "status", "nodes"],
   "properties": {
-    "workflowId": {
-      "type": "string"
-    },
-    "runId": {
-      "type": "string"
-    },
+    "workflowId": { "type": "string" },
+    "runId": { "type": "string" },
     "status": {
       "type": "string",
-      "enum": [
-        "created",
-        "running",
-        "waiting",
-        "succeeded",
-        "failed",
-        "blocked",
-        "cancelled"
-      ]
+      "enum": ["created", "running", "waiting", "succeeded", "failed", "blocked", "cancelled"]
     },
+    "currentNode": { "type": "string" },
     "nodes": {
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "pending",
-              "ready",
-              "running",
-              "waiting",
-              "succeeded",
-              "failed",
-              "skipped",
-              "blocked",
-              "cancelled"
-            ]
-          }
+            "enum": ["pending", "ready", "running", "waiting", "succeeded", "failed", "skipped", "blocked", "cancelled"]
+          },
+          "error": { "type": "string" },
+          "retryable": { "type": "boolean" },
+          "waitingFor": { "type": "string" }
         },
-        "additionalProperties": true
+        "additionalProperties": false
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

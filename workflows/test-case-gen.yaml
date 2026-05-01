@@ -1,0 +1,63 @@
+id: test-case-gen
+version: 0.1.0
+skill: test-case-gen
+nodes:
+  - id: create-feature-workspace
+    type: artifact
+  - id: ingest-requirement-source
+    type: tool
+    action: lanhu.fetchRequirement
+    dependsOn: [create-feature-workspace]
+  - id: normalize-requirement-source
+    type: agent
+    agent: source-normalizer
+    dependsOn: [ingest-requirement-source]
+  - id: consult-knowledge
+    type: tool
+    action: knowledge.consult
+    dependsOn: [normalize-requirement-source]
+  - id: analyze-requirement-gaps
+    type: agent
+    agent: requirement-analyst
+    dependsOn: [consult-knowledge]
+  - id: draft-clarification-dossier
+    type: agent
+    agent: clarification-drafter
+    dependsOn: [analyze-requirement-gaps]
+  - id: render-confirmation-draft
+    type: artifact
+    dependsOn: [draft-clarification-dossier]
+  - id: await-confirmation-result
+    type: human
+    dependsOn: [render-confirmation-draft]
+  - id: author-requirement-spec
+    type: agent
+    agent: requirement-author
+    dependsOn: [normalize-requirement-source, analyze-requirement-gaps, draft-clarification-dossier, await-confirmation-result]
+  - id: design-test-points
+    type: agent
+    agent: test-point-designer
+    dependsOn: [author-requirement-spec]
+  - id: author-test-spec
+    type: agent
+    agent: test-spec-author
+    dependsOn: [design-test-points, author-requirement-spec]
+  - id: review-test-spec
+    type: agent
+    agent: test-spec-reviewer
+    dependsOn: [author-test-spec, author-requirement-spec]
+  - id: gate-readiness
+    type: gate
+    gate: requirement-test-readiness
+    dependsOn: [analyze-requirement-gaps, await-confirmation-result, author-requirement-spec, author-test-spec, review-test-spec]
+  - id: export-xmind
+    type: tool
+    action: xmind.export
+    dependsOn: [gate-readiness]
+  - id: propose-knowledge
+    type: tool
+    action: knowledge.propose
+    dependsOn: [export-xmind]
+  - id: write-design-report
+    type: artifact
+    dependsOn: [propose-knowledge]
