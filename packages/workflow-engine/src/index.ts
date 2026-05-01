@@ -36,6 +36,7 @@ export {
 } from "./gates";
 export { validateAutomationAssertions } from "./automation-policy";
 export {
+  buildBugReport,
   buildEvidencePackFromRunRecord,
   buildDesignReport,
   buildFlowSpecFromTestSpec,

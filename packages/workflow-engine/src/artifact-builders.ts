@@ -21,6 +21,8 @@ import type {
 import type { GateResult } from "./gates";
 import type { TraceEvent } from "./types";
 
+export { buildBugReport } from "./bug-report-builder";
+
 export function buildRequirementAnalysisInput(
   requirementDraftRef: ArtifactRef,
   knowledgeConsultRef: ArtifactRef,
