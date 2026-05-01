@@ -6,6 +6,7 @@ export {
   type KataAgentErrorCode,
 } from "./error-code";
 export type { ConfigLoader } from "./config";
+export { LocalConfigLoader, type LocalConfigLoaderOptions } from "./config-loader";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =
