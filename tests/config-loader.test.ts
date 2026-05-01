@@ -15,10 +15,13 @@ describe("LocalConfigLoader", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
     writeFileSync(join(rootDir, ".env"), "LANHU_COOKIE=file-cookie\n");
-    const loader = new LocalConfigLoader({
+    const fileLoader = new LocalConfigLoader({ rootDir });
+    expect(fileLoader.resolveSecret("LANHU_COOKIE")).toBe("file-cookie");
+
+    const overrideLoader = new LocalConfigLoader({
       rootDir,
       env: { LANHU_COOKIE: "env-cookie" },
     });
-    expect(loader.resolveSecret("LANHU_COOKIE")).toBe("env-cookie");
+    expect(overrideLoader.resolveSecret("LANHU_COOKIE")).toBe("env-cookie");
   });
 });
