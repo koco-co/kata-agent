@@ -1,0 +1,6 @@
+name: knowledge-keeper
+title: 知识库维护
+version: 0.1.0
+description: 审核 KnowledgeSuggestion 并维护项目知识库。
+workflow: knowledge-keeper
+status: interface-only

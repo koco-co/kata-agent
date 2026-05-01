@@ -1,0 +1,7 @@
+name: source-normalizer
+title: 需求源材料规整 Agent
+version: 0.1.0
+inputSchema: RequirementSourceBundle
+outputSchema: RequirementDraft
+ownerSkill: test-case-gen
+promptPath: prompt.md

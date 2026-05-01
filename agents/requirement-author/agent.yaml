@@ -1,0 +1,7 @@
+name: requirement-author
+title: 需求规格定稿 Agent
+version: 0.1.0
+inputSchema: RequirementAuthorInput
+outputSchema: RequirementSpec
+ownerSkill: test-case-gen
+promptPath: prompt.md

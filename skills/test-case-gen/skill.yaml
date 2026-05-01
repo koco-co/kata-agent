@@ -1,0 +1,29 @@
+name: test-case-gen
+title: 测试用例生成
+version: 0.1.0
+description: 从蓝湖、PRD 或补充说明中补全需求，生成产品确认稿、完整需求文档、TestSpec 和 XMind。
+workflow: test-case-gen
+inputs:
+  schema: TestCaseGenInput
+outputs:
+  - RequirementSourceBundle
+  - RequirementDraft
+  - KnowledgeConsultResult
+  - RequirementAnalysisInput
+  - RequirementGapReport
+  - ClarificationDossier
+  - ConfirmationDraft
+  - ConfirmationResult
+  - RequirementAuthorInput
+  - RequirementSpec
+  - TestPointSet
+  - TestSpecAuthorInput
+  - TestSpec
+  - TestSpecReviewerInput
+  - ReviewReport
+  - XMindExport
+  - KnowledgeSuggestion
+  - DesignReport
+requiredPlugins:
+  - lanhu
+  - xmind
