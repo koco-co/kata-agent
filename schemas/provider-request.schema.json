@@ -3,17 +3,10 @@
   "$id": "https://kata-agent.local/schemas/provider-request.schema.json",
   "title": "ProviderRequest",
   "type": "object",
-  "required": [
-    "messages",
-    "metadata"
-  ],
+  "required": ["messages", "metadata"],
   "properties": {
-    "messages": {
-      "type": "string"
-    },
-    "metadata": {
-      "type": "object"
-    }
+    "messages": { "type": "array" },
+    "metadata": { "type": "object" }
   },
   "additionalProperties": true
 }

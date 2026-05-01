@@ -13,27 +13,14 @@
     "promptPath"
   ],
   "properties": {
-    "name": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string"
-    },
-    "version": {
-      "type": "string"
-    },
-    "inputSchema": {
-      "type": "string"
-    },
-    "outputSchema": {
-      "type": "string"
-    },
-    "ownerSkill": {
-      "type": "string"
-    },
-    "promptPath": {
-      "type": "string"
-    }
+    "name": { "type": "string" },
+    "title": { "type": "string" },
+    "version": { "type": "string" },
+    "inputSchema": { "type": "string" },
+    "outputSchema": { "type": "string" },
+    "ownerSkill": { "type": "string" },
+    "promptPath": { "type": "string" },
+    "providerHints": { "type": "object" }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

@@ -3,17 +3,10 @@
   "$id": "https://kata-agent.local/schemas/provider-response.schema.json",
   "title": "ProviderResponse",
   "type": "object",
-  "required": [
-    "content",
-    "usage"
-  ],
+  "required": ["content", "usage"],
   "properties": {
-    "content": {
-      "type": "string"
-    },
-    "usage": {
-      "type": "object"
-    }
+    "content": { "type": "string" },
+    "usage": { "type": "object" }
   },
   "additionalProperties": true
 }
