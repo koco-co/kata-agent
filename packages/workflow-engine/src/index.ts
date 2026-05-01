@@ -36,11 +36,15 @@ export {
 } from "./gates";
 export { validateAutomationAssertions } from "./automation-policy";
 export {
+  buildEvidencePackFromRunRecord,
   buildDesignReport,
+  buildFlowSpecFromTestSpec,
   buildRequirementAnalysisInput,
   buildRequirementAuthorInput,
+  buildRunPlanFromFlowSpec,
   buildTestSpecAuthorInput,
   buildTestSpecReviewerInput,
+  renderAutomationReportMarkdown,
   renderConfirmationDraft,
 } from "./artifact-builders";
 export type {
