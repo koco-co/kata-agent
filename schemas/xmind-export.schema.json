@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/xmind-export.schema.json",
+  "title": "XMindExport",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "outputPath",
+    "caseCount"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "outputPath": {
+      "type": "string"
+    },
+    "caseCount": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": true
+}

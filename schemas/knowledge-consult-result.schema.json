@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/knowledge-consult-result.schema.json",
+  "title": "KnowledgeConsultResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "query",
+    "snippets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "query": {
+      "type": "string"
+    },
+    "snippets": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

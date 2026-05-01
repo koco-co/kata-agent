@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/requirement-draft.schema.json",
+  "title": "RequirementDraft",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "title",
+    "facts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "project": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "facts": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

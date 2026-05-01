@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/test-point.schema.json",
+  "title": "TestPoint",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "priority",
+    "requirementRefs",
+    "risk"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string"
+    },
+    "requirementRefs": {
+      "type": "string"
+    },
+    "risk": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

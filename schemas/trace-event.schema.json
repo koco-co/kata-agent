@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/trace-event.schema.json",
+  "title": "TraceEvent",
+  "type": "object",
+  "required": [
+    "runId",
+    "nodeId",
+    "type",
+    "at"
+  ],
+  "properties": {
+    "runId": {
+      "type": "string"
+    },
+    "nodeId": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "enter",
+        "exit",
+        "gate-passed",
+        "gate-failed",
+        "node-skipped",
+        "agent-call",
+        "provider-call",
+        "provider-cost-summary",
+        "plugin-action",
+        "artifact-write",
+        "knowledge-consult",
+        "knowledge-propose",
+        "human-import"
+      ]
+    },
+    "at": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

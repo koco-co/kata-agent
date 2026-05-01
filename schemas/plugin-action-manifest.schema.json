@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/plugin-action-manifest.schema.json",
+  "title": "PluginActionManifest",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "inputSchema",
+    "outputSchema"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "inputSchema": {
+      "type": "string"
+    },
+    "outputSchema": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

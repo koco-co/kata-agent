@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/review-report.schema.json",
+  "title": "ReviewReport",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "passed",
+    "violations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "violations": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

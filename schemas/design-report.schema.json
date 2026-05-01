@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/design-report.schema.json",
+  "title": "DesignReport",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "summary",
+    "artifactRefs",
+    "gateResults"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "artifactRefs": {
+      "type": "array"
+    },
+    "gateResults": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

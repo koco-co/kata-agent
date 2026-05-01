@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/knowledge-suggestion.schema.json",
+  "title": "KnowledgeSuggestion",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "category",
+    "confidence",
+    "sourceArtifact",
+    "content",
+    "reason"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "category": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string"
+    },
+    "sourceArtifact": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

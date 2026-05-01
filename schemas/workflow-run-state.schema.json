@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/workflow-run-state.schema.json",
+  "title": "WorkflowRunState",
+  "type": "object",
+  "required": [
+    "workflowId",
+    "runId",
+    "status",
+    "nodes"
+  ],
+  "properties": {
+    "workflowId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "running",
+        "waiting",
+        "succeeded",
+        "failed",
+        "blocked",
+        "cancelled"
+      ]
+    },
+    "nodes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "running",
+              "waiting",
+              "succeeded",
+              "failed",
+              "skipped",
+              "blocked",
+              "cancelled"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

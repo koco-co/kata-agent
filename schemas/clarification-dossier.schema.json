@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/clarification-dossier.schema.json",
+  "title": "ClarificationDossier",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "summary",
+    "questions",
+    "assumptions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "questions": {
+      "type": "string"
+    },
+    "assumptions": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

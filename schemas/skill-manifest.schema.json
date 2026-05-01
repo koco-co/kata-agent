@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/skill-manifest.schema.json",
+  "title": "SkillManifest",
+  "type": "object",
+  "required": [
+    "name",
+    "title",
+    "version",
+    "description",
+    "workflow"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "workflow": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

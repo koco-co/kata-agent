@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/requirement-source-bundle.schema.json",
+  "title": "RequirementSourceBundle",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "sourceType",
+    "textBlocks",
+    "images",
+    "rawFiles",
+    "fetchedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "sourceType": {
+      "type": "string"
+    },
+    "textBlocks": {
+      "type": "array"
+    },
+    "images": {
+      "type": "array"
+    },
+    "rawFiles": {
+      "type": "array"
+    },
+    "fetchedAt": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

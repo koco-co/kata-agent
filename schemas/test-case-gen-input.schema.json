@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/test-case-gen-input.schema.json",
+  "title": "TestCaseGenInput",
+  "type": "object",
+  "required": [
+    "project",
+    "feature",
+    "source"
+  ],
+  "properties": {
+    "project": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

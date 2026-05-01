@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/test-spec.schema.json",
+  "title": "TestSpec",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "title",
+    "requirementRef",
+    "status",
+    "modules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "project": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "requirementRef": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "modules": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}
