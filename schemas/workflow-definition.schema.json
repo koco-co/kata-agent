@@ -3,25 +3,33 @@
   "$id": "https://kata-agent.local/schemas/workflow-definition.schema.json",
   "title": "WorkflowDefinition",
   "type": "object",
-  "required": [
-    "id",
-    "version",
-    "skill",
-    "nodes"
-  ],
+  "required": ["id", "version", "skill", "nodes"],
   "properties": {
-    "id": {
-      "type": "string"
-    },
-    "version": {
-      "type": "string"
-    },
-    "skill": {
-      "type": "string"
-    },
+    "id": { "type": "string" },
+    "version": { "type": "string" },
+    "skill": { "type": "string" },
     "nodes": {
-      "type": "object"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["tool", "agent", "gate", "human", "artifact"]
+          },
+          "action": { "type": "string" },
+          "agent": { "type": "string" },
+          "gate": { "type": "string" },
+          "dependsOn": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

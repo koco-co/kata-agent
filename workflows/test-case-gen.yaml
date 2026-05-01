@@ -19,7 +19,7 @@ nodes:
   - id: analyze-requirement-gaps
     type: agent
     agent: requirement-analyst
-    dependsOn: [consult-knowledge]
+    dependsOn: [normalize-requirement-source, consult-knowledge]
   - id: draft-clarification-dossier
     type: agent
     agent: clarification-drafter

@@ -80,6 +80,10 @@ describe("cli", () => {
         "run-1",
         "--file",
         confirmationPath,
+        "--project",
+        "demo",
+        "--feature",
+        "rule-config",
       ],
       { cwd: repoRoot },
     );
@@ -101,5 +105,10 @@ describe("cli", () => {
     expect(
       readFileSync(join(featureDir, "traces", "run-1.jsonl"), "utf8"),
     ).toContain('"type":"human-import"');
+    const index = JSON.parse(
+      readFileSync(join(featureDir, "artifact-index.json"), "utf8"),
+    );
+    expect(index.project).toBe("demo");
+    expect(index.feature).toBe("rule-config");
   });
 });

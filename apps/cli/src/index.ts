@@ -95,13 +95,19 @@ if (command === "confirmation import") {
     );
     process.exit(1);
   }
+  const project = argValue("--project");
+  const feature = argValue("--feature");
   const ref = writeArtifactInFeatureDir(
     featureDir,
     "ConfirmationResult",
     "requirement/confirmed/confirmation-result.json",
     rawConfirmation,
     "confirmation import",
-    { allowedScopes: ["feature.requirement.confirmed"] },
+    {
+      allowedScopes: ["feature.requirement.confirmed"],
+      project,
+      feature,
+    },
   );
   saveWorkflowState(featureDir, markSucceeded(state, waitingNode));
   appendTrace(featureDir, {

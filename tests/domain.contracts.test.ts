@@ -123,4 +123,16 @@ describe("domain contracts", () => {
     expect(confirmation.answers).toEqual([]);
     expect(points.points).toEqual([]);
   });
+
+  test("workflow definition schema matches workflow yaml shape", () => {
+    const schema = readSchema(SCHEMA_REGISTRY.WorkflowDefinition);
+    expect(schema.properties?.nodes?.type).toBe("array");
+    expect(schema.properties?.nodes?.items?.properties?.type?.enum).toEqual([
+      "tool",
+      "agent",
+      "gate",
+      "human",
+      "artifact",
+    ]);
+  });
 });
