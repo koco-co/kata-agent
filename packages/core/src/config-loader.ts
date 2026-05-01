@@ -20,7 +20,7 @@ export class LocalConfigLoader implements ConfigLoader {
         if (!trimmed || trimmed.startsWith("#")) continue;
         const index = trimmed.indexOf("=");
         if (index <= 0) continue;
-        values[trimmed.slice(0, index)] = trimmed.slice(index + 1);
+        values[trimmed.slice(0, index).trim()] = trimmed.slice(index + 1).trim();
       }
     }
     for (const [key, value] of Object.entries(this.options.env ?? process.env)) {
