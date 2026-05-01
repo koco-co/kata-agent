@@ -1,0 +1,10 @@
+export type { FeatureLocation } from "./paths";
+export { artifactPath, featureDir } from "./paths";
+export type { ArtifactIndex, WriteArtifactOptions } from "./store";
+export {
+  createFeatureWorkspace,
+  readArtifactIndex,
+  readArtifactVerified,
+  writeArtifact,
+  writeArtifactInFeatureDir,
+} from "./store";
