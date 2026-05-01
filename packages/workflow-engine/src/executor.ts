@@ -5,6 +5,7 @@ import type {
 } from "../../agent-runner/src/index";
 import type { FeatureLocation } from "../../artifact-repo/src/index";
 import {
+  artifactPath,
   createFeatureWorkspace,
   featureDir,
   readArtifactIndex,
@@ -459,18 +460,20 @@ export class WorkflowExecutor {
                 ["feature.exports"],
               ),
             );
-            writtenRefs.push(
-              remember(
-                writeArtifact(
-                  context.location,
-                  "XMindMockFile",
-                  output.outputPath,
-                  `mock xmind export: ${output.caseCount} cases\n`,
-                  "workflow-executor",
-                  { allowedScopes: ["feature.exports"] },
+            if (!existsSync(artifactPath(context.location, output.outputPath))) {
+              writtenRefs.push(
+                remember(
+                  writeArtifact(
+                    context.location,
+                    "XMindMockFile",
+                    output.outputPath,
+                    `mock xmind export: ${output.caseCount} cases\n`,
+                    "workflow-executor",
+                    { allowedScopes: ["feature.exports"] },
+                  ),
                 ),
-              ),
-            );
+              );
+            }
             break;
           }
           case "propose-knowledge": {
