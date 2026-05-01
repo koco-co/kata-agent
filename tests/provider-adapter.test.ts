@@ -4,6 +4,7 @@ import { OpenAICompatibleProvider } from "../packages/agent-runner/src/index";
 describe("OpenAICompatibleProvider", () => {
   test("posts chat completions request and returns content", async () => {
     const calls: Array<{ url: string; init: RequestInit }> = [];
+    const apiKey = "test-key";
     const fetchImpl: typeof fetch = Object.assign(
       async (...args: Parameters<typeof fetch>) => {
         const [url, init] = args;
@@ -21,7 +22,7 @@ describe("OpenAICompatibleProvider", () => {
     const provider = new OpenAICompatibleProvider({
       id: "test",
       baseUrl: "https://provider.example/v1/",
-      apiKey: "test-key",
+      apiKey,
       model: "test-model",
       fetchImpl,
     });
@@ -39,7 +40,7 @@ describe("OpenAICompatibleProvider", () => {
     expect(calls[0]?.init.method).toBe("POST");
     expect(calls[0]?.init.headers).toEqual({
       "content-type": "application/json",
-      authorization: "Bearer test-key",
+      authorization: `Bearer ${apiKey}`,
     });
     expect(JSON.stringify(calls[0]?.init.headers)).not.toContain("LANHU_COOKIE");
     expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
