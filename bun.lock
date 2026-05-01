@@ -54,6 +54,10 @@
       "name": "@kata-agent/plugin-lanhu",
       "version": "0.1.0",
     },
+    "plugins/playwright": {
+      "name": "@kata-agent/plugin-playwright",
+      "version": "0.1.0",
+    },
     "plugins/xmind": {
       "name": "@kata-agent/plugin-xmind",
       "version": "0.1.0",
@@ -73,6 +77,8 @@
     "@kata-agent/knowledge-repo": ["@kata-agent/knowledge-repo@workspace:packages/knowledge-repo"],
 
     "@kata-agent/plugin-lanhu": ["@kata-agent/plugin-lanhu@workspace:plugins/lanhu"],
+
+    "@kata-agent/plugin-playwright": ["@kata-agent/plugin-playwright@workspace:plugins/playwright"],
 
     "@kata-agent/plugin-runtime": ["@kata-agent/plugin-runtime@workspace:packages/plugin-runtime"],
 

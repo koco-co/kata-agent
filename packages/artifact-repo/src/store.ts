@@ -30,6 +30,7 @@ const WRITE_SCOPE_PREFIXES: Record<string, string[]> = {
   "feature.requirement.confirmed": ["requirement/confirmed/"],
   "feature.requirement.spec": ["requirement/spec/"],
   "feature.test-spec": ["test-spec/"],
+  "feature.automation": ["automation/"],
   "feature.exports": ["exports/"],
   "feature.reports": ["reports/"],
 };

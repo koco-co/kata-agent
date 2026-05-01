@@ -1,0 +1,17 @@
+name: playwright
+title: Playwright 自动化
+version: 0.1.0
+type: automation
+actions:
+  - id: playwright.runPlan
+    title: 执行 Playwright 计划
+    inputSchema: RunPlan
+    outputSchema: RunRecord
+    sideEffects:
+      writeArtifacts: true
+      external: true
+permissions:
+  network: restricted
+  secrets: []
+  writeScopes:
+    - feature.automation

@@ -73,6 +73,34 @@ describe("artifact store", () => {
     ).toThrow("FORBIDDEN_WRITE_SCOPE");
   });
 
+  test("automation write scope is limited to automation artifacts", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+
+    expect(() =>
+      writeArtifact(
+        location,
+        "RunPlan",
+        "automation/run-plan.json",
+        "{}",
+        "test",
+        { allowedScopes: ["feature.automation"] },
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      writeArtifact(
+        location,
+        "RunPlan",
+        "reports/run-plan.json",
+        "{}",
+        "test",
+        { allowedScopes: ["feature.automation"] },
+      ),
+    ).toThrow("FORBIDDEN_WRITE_SCOPE");
+  });
+
   test("rejects project and feature path escape segments", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
