@@ -3,29 +3,17 @@
   "$id": "https://kata-agent.local/schemas/skill-manifest.schema.json",
   "title": "SkillManifest",
   "type": "object",
-  "required": [
-    "name",
-    "title",
-    "version",
-    "description",
-    "workflow"
-  ],
+  "required": ["name", "title", "version", "description", "workflow"],
   "properties": {
-    "name": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string"
-    },
-    "version": {
-      "type": "string"
-    },
-    "description": {
-      "type": "string"
-    },
-    "workflow": {
-      "type": "string"
-    }
+    "name": { "type": "string" },
+    "title": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "workflow": { "type": "string" },
+    "inputs": { "type": "object" },
+    "outputs": { "type": "array" },
+    "requiredPlugins": { "type": "array" },
+    "status": { "enum": ["full", "interface-only", "planned"] }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }
