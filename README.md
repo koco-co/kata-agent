@@ -1,5 +1,12 @@
 # kata-agent
 
+kata-agent 是面向测试领域的 Agentic QA Workflow Engine。
+
+当前项目按 Superpowers 工作流管理设计与实施：
+
+- [Architecture Design](docs/superpowers/specs/2026-05-01-kata-agent-architecture-design.md)
+- [Foundation Implementation Plan](docs/superpowers/plans/2026-05-01-kata-agent-v0.1-foundation.md)
+
 ## v0.1c Real Demo
 
 Real mode calls a Lanhu source URL and an OpenAI-compatible provider. Configure

@@ -111,7 +111,7 @@ Excluded:
 - Modify: `tests/cli.smoke.test.ts`
 - Modify: `tests/workflow-executor.test.ts`
 
-- [ ] **Step 1: Add a failing CLI test for invalid ConfirmationResult**
+- [x] **Step 1: Add a failing CLI test for invalid ConfirmationResult**
 
 Append this test to `tests/cli.smoke.test.ts` inside the existing `describe("cli", ...)` block:
 
@@ -183,7 +183,7 @@ Append this test to `tests/cli.smoke.test.ts` inside the existing `describe("cli
   });
 ```
 
-- [ ] **Step 2: Run the CLI test and verify it fails**
+- [x] **Step 2: Run the CLI test and verify it fails**
 
 Run:
 
@@ -193,7 +193,7 @@ bun test tests/cli.smoke.test.ts
 
 Expected: FAIL because `apps/cli/src/index.ts` accepts `status: "accepted"` as long as `answers` is an array.
 
-- [ ] **Step 3: Validate ConfirmationResult with Ajv in CLI import**
+- [x] **Step 3: Validate ConfirmationResult with Ajv in CLI import**
 
 In `apps/cli/src/index.ts`, replace the `SCHEMA_VERSION` import with `assertValidSchema`:
 
@@ -233,7 +233,7 @@ In the `writeArtifactInFeatureDir` call, replace `rawConfirmation` with `canonic
   );
 ```
 
-- [ ] **Step 4: Run the CLI test and verify it passes**
+- [x] **Step 4: Run the CLI test and verify it passes**
 
 Run:
 
@@ -243,7 +243,7 @@ bun test tests/cli.smoke.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 5: Add a failing executor test for failed node persistence**
+- [x] **Step 5: Add a failing executor test for failed node persistence**
 
 Append this test to `tests/workflow-executor.test.ts` inside the existing `describe("workflow executor", ...)` block:
 
@@ -294,7 +294,7 @@ Append this test to `tests/workflow-executor.test.ts` inside the existing `descr
   });
 ```
 
-- [ ] **Step 6: Run the executor test and verify it fails**
+- [x] **Step 6: Run the executor test and verify it fails**
 
 Run:
 
@@ -304,7 +304,7 @@ bun test tests/workflow-executor.test.ts
 
 Expected: FAIL because the executor rethrows the error and leaves the node state as `running`.
 
-- [ ] **Step 7: Persist failed node state in WorkflowExecutor**
+- [x] **Step 7: Persist failed node state in WorkflowExecutor**
 
 In `packages/workflow-engine/src/executor.ts`, add `markFailed` to the state imports:
 
@@ -336,7 +336,7 @@ Replace the catch block at the end of the node dispatch with:
       }
 ```
 
-- [ ] **Step 8: Run the executor test and verify it passes**
+- [x] **Step 8: Run the executor test and verify it passes**
 
 Run:
 
@@ -346,7 +346,7 @@ bun test tests/workflow-executor.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 9: Make the v0.1c secret scan command runnable with checked source scope**
+- [x] **Step 9: Make the v0.1c secret scan command runnable with checked source scope**
 
 In `docs/superpowers/plans/2026-05-01-kata-agent-v0.1c-real-providers.md`, replace the secret/path scan command with:
 
@@ -360,7 +360,7 @@ Expected text below it:
 Expected: no hardcoded secrets, internal URLs, or local absolute paths in checked source, tests, manifests, package metadata, or README.
 ```
 
-- [ ] **Step 10: Verify Task 0**
+- [x] **Step 10: Verify Task 0**
 
 Run:
 
@@ -372,7 +372,7 @@ rg -n "LANHU_COOKIE=|Bearer [A-Za-z0-9]|https://[^ ]*internal|/Users/|/private/"
 
 Expected: tests pass, typecheck passes, `rg` exits with no matches.
 
-- [ ] **Step 11: Commit Task 0**
+- [x] **Step 11: Commit Task 0**
 
 ```bash
 git add apps/cli/src/index.ts packages/workflow-engine/src/executor.ts tests/cli.smoke.test.ts tests/workflow-executor.test.ts docs/superpowers/plans/2026-05-01-kata-agent-v0.1c-real-providers.md
@@ -397,7 +397,7 @@ git commit -m "fix: close runtime foundation gaps"
 - Modify: `tests/domain.contracts.test.ts`
 - Modify: `tests/domain.validator.test.ts`
 
-- [ ] **Step 1: Write failing automation contract tests**
+- [x] **Step 1: Write failing automation contract tests**
 
 Create `tests/automation.contracts.test.ts`:
 
@@ -577,7 +577,7 @@ describe("automation domain contracts", () => {
 });
 ```
 
-- [ ] **Step 2: Run automation contract tests and verify they fail**
+- [x] **Step 2: Run automation contract tests and verify they fail**
 
 Run:
 
@@ -587,7 +587,7 @@ bun test tests/automation.contracts.test.ts
 
 Expected: FAIL because automation types and schema registry entries do not exist.
 
-- [ ] **Step 3: Add TypeScript automation contracts**
+- [x] **Step 3: Add TypeScript automation contracts**
 
 Create `packages/domain/src/automation.ts`:
 
@@ -712,7 +712,7 @@ export interface EvidencePack {
 }
 ```
 
-- [ ] **Step 4: Export automation contracts**
+- [x] **Step 4: Export automation contracts**
 
 In `packages/domain/src/index.ts`, add:
 
@@ -733,7 +733,7 @@ export type {
 } from "./automation";
 ```
 
-- [ ] **Step 5: Register automation schemas**
+- [x] **Step 5: Register automation schemas**
 
 In `packages/domain/src/schemas.ts`, add these entries before `PluginManifest`:
 
@@ -745,7 +745,7 @@ In `packages/domain/src/schemas.ts`, add these entries before `PluginManifest`:
   EvidencePack: "schemas/evidence-pack.schema.json",
 ```
 
-- [ ] **Step 6: Create UiScriptGenInput schema**
+- [x] **Step 6: Create UiScriptGenInput schema**
 
 Create `schemas/ui-script-gen-input.schema.json`:
 
@@ -778,7 +778,7 @@ Create `schemas/ui-script-gen-input.schema.json`:
 }
 ```
 
-- [ ] **Step 7: Create FlowSpec schema**
+- [x] **Step 7: Create FlowSpec schema**
 
 Create `schemas/flow-spec.schema.json`:
 
@@ -865,7 +865,7 @@ Create `schemas/flow-spec.schema.json`:
 }
 ```
 
-- [ ] **Step 8: Create RunPlan schema**
+- [x] **Step 8: Create RunPlan schema**
 
 Create `schemas/run-plan.schema.json`:
 
@@ -943,7 +943,7 @@ Create `schemas/run-plan.schema.json`:
 }
 ```
 
-- [ ] **Step 9: Create RunRecord schema**
+- [x] **Step 9: Create RunRecord schema**
 
 Create `schemas/run-record.schema.json`:
 
@@ -1002,7 +1002,7 @@ Create `schemas/run-record.schema.json`:
 }
 ```
 
-- [ ] **Step 10: Create EvidencePack schema**
+- [x] **Step 10: Create EvidencePack schema**
 
 Create `schemas/evidence-pack.schema.json`:
 
@@ -1046,7 +1046,7 @@ Create `schemas/evidence-pack.schema.json`:
 }
 ```
 
-- [ ] **Step 11: Extend closed enum checks**
+- [x] **Step 11: Extend closed enum checks**
 
 In `tests/domain.contracts.test.ts`, add these assertions inside `required closed enum constraints are present in JSON Schemas`:
 
@@ -1068,7 +1068,7 @@ In `tests/domain.contracts.test.ts`, add these assertions inside `required close
     );
 ```
 
-- [ ] **Step 12: Extend validator tests for path safety**
+- [x] **Step 12: Extend validator tests for path safety**
 
 Append this test to `tests/domain.validator.test.ts`:
 
@@ -1104,7 +1104,7 @@ Append this test to `tests/domain.validator.test.ts`:
   });
 ```
 
-- [ ] **Step 13: Verify Task 1**
+- [x] **Step 13: Verify Task 1**
 
 Run:
 
@@ -1115,7 +1115,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 14: Commit Task 1**
+- [x] **Step 14: Commit Task 1**
 
 ```bash
 git add packages/domain/src/automation.ts packages/domain/src/index.ts packages/domain/src/schemas.ts schemas/ui-script-gen-input.schema.json schemas/flow-spec.schema.json schemas/run-plan.schema.json schemas/run-record.schema.json schemas/evidence-pack.schema.json tests/automation.contracts.test.ts tests/domain.contracts.test.ts tests/domain.validator.test.ts
@@ -1133,7 +1133,7 @@ git commit -m "feat: add automation domain contracts"
 - Modify: `packages/workflow-engine/src/index.ts`
 - Create: `tests/automation-policy.test.ts`
 
-- [ ] **Step 1: Write failing assertion policy tests**
+- [x] **Step 1: Write failing assertion policy tests**
 
 Create `tests/automation-policy.test.ts`:
 
@@ -1231,7 +1231,7 @@ describe("automation assertion policy", () => {
 });
 ```
 
-- [ ] **Step 2: Run policy tests and verify they fail**
+- [x] **Step 2: Run policy tests and verify they fail**
 
 Run:
 
@@ -1241,7 +1241,7 @@ bun test tests/automation-policy.test.ts
 
 Expected: FAIL because `automation-policy.ts` and `automation-script-readiness` do not exist.
 
-- [ ] **Step 3: Implement strict assertion policy**
+- [x] **Step 3: Implement strict assertion policy**
 
 Create `packages/workflow-engine/src/automation-policy.ts`:
 
@@ -1316,7 +1316,7 @@ export function validateAutomationAssertions(spec: TestSpec): GateResult {
 }
 ```
 
-- [ ] **Step 4: Register automation gate**
+- [x] **Step 4: Register automation gate**
 
 In `packages/workflow-engine/src/gates.ts`, import the policy:
 
@@ -1346,7 +1346,7 @@ Add the gate to `GATE_REGISTRY`:
   },
 ```
 
-- [ ] **Step 5: Export automation policy**
+- [x] **Step 5: Export automation policy**
 
 In `packages/workflow-engine/src/index.ts`, add:
 
@@ -1360,7 +1360,7 @@ Add `checkAutomationScriptReadiness` to the gates export block:
   checkAutomationScriptReadiness,
 ```
 
-- [ ] **Step 6: Verify Task 2**
+- [x] **Step 6: Verify Task 2**
 
 Run:
 
@@ -1371,7 +1371,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```bash
 git add packages/workflow-engine/src/automation-policy.ts packages/workflow-engine/src/gates.ts packages/workflow-engine/src/index.ts tests/automation-policy.test.ts
@@ -1388,7 +1388,7 @@ git commit -m "feat: add strict automation assertion policy"
 - Modify: `packages/workflow-engine/src/index.ts`
 - Create: `tests/automation-builders.test.ts`
 
-- [ ] **Step 1: Write failing builder tests**
+- [x] **Step 1: Write failing builder tests**
 
 Create `tests/automation-builders.test.ts`:
 
@@ -1542,7 +1542,7 @@ describe("automation artifact builders", () => {
 });
 ```
 
-- [ ] **Step 2: Run builder tests and verify they fail**
+- [x] **Step 2: Run builder tests and verify they fail**
 
 Run:
 
@@ -1552,7 +1552,7 @@ bun test tests/automation-builders.test.ts
 
 Expected: FAIL because automation builder functions do not exist.
 
-- [ ] **Step 3: Add automation builders**
+- [x] **Step 3: Add automation builders**
 
 Append to `packages/workflow-engine/src/artifact-builders.ts`:
 
@@ -1717,7 +1717,7 @@ export function renderAutomationReportMarkdown(record: RunRecord): string {
 }
 ```
 
-- [ ] **Step 4: Export automation builders**
+- [x] **Step 4: Export automation builders**
 
 In `packages/workflow-engine/src/index.ts`, add these to the `artifact-builders` export block:
 
@@ -1728,7 +1728,7 @@ In `packages/workflow-engine/src/index.ts`, add these to the `artifact-builders`
   renderAutomationReportMarkdown,
 ```
 
-- [ ] **Step 5: Verify Task 3**
+- [x] **Step 5: Verify Task 3**
 
 Run:
 
@@ -1739,7 +1739,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```bash
 git add packages/workflow-engine/src/artifact-builders.ts packages/workflow-engine/src/index.ts tests/automation-builders.test.ts
@@ -1758,7 +1758,7 @@ git commit -m "feat: add automation artifact builders"
 - Create: `tests/playwright-plugin.test.ts`
 - Modify: `tests/manifest-references.test.ts`
 
-- [ ] **Step 1: Write failing plugin tests**
+- [x] **Step 1: Write failing plugin tests**
 
 Create `tests/playwright-plugin.test.ts`:
 
@@ -1848,7 +1848,7 @@ describe("playwright automation plugin", () => {
 });
 ```
 
-- [ ] **Step 2: Run plugin tests and verify they fail**
+- [x] **Step 2: Run plugin tests and verify they fail**
 
 Run:
 
@@ -1858,7 +1858,7 @@ bun test tests/playwright-plugin.test.ts
 
 Expected: FAIL because the Playwright plugin package and mock runner do not exist.
 
-- [ ] **Step 3: Create plugin workspace package**
+- [x] **Step 3: Create plugin workspace package**
 
 Create `plugins/playwright/package.json`:
 
@@ -1871,7 +1871,7 @@ Create `plugins/playwright/package.json`:
 }
 ```
 
-- [ ] **Step 4: Create Playwright plugin manifest**
+- [x] **Step 4: Create Playwright plugin manifest**
 
 Create `plugins/playwright/plugin.yaml`:
 
@@ -1895,7 +1895,7 @@ permissions:
     - feature.automation
 ```
 
-- [ ] **Step 5: Implement deterministic mock runner**
+- [x] **Step 5: Implement deterministic mock runner**
 
 Create `plugins/playwright/src/mock.ts`:
 
@@ -1949,7 +1949,7 @@ export async function mockRunPlan(
 }
 ```
 
-- [ ] **Step 6: Allow automation write scope in Artifact Repository**
+- [x] **Step 6: Allow automation write scope in Artifact Repository**
 
 In `packages/artifact-repo/src/store.ts`, add this write scope prefix:
 
@@ -1987,7 +1987,7 @@ Add a test to `tests/artifact-repo.test.ts`:
   });
 ```
 
-- [ ] **Step 7: Verify plugin manifest refs include Playwright**
+- [x] **Step 7: Verify plugin manifest refs include Playwright**
 
 Run:
 
@@ -1998,7 +1998,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit Task 4**
+- [x] **Step 8: Commit Task 4**
 
 ```bash
 git add plugins/playwright/package.json plugins/playwright/plugin.yaml plugins/playwright/src/mock.ts packages/artifact-repo/src/store.ts tests/playwright-plugin.test.ts tests/artifact-repo.test.ts
@@ -2015,7 +2015,7 @@ git commit -m "feat: add playwright automation plugin shell"
 - Create: `workflows/ui-script-gen.yaml`
 - Modify: `tests/manifest-references.test.ts`
 
-- [ ] **Step 1: Add failing manifest reference assertion for ui-script-gen**
+- [x] **Step 1: Add failing manifest reference assertion for ui-script-gen**
 
 Append this test to `tests/manifest-references.test.ts`:
 
@@ -2048,7 +2048,7 @@ Append this test to `tests/manifest-references.test.ts`:
   });
 ```
 
-- [ ] **Step 2: Run manifest tests and verify they fail**
+- [x] **Step 2: Run manifest tests and verify they fail**
 
 Run:
 
@@ -2058,7 +2058,7 @@ bun test tests/manifest-references.test.ts
 
 Expected: FAIL because `skills/ui-script-gen/skill.yaml` and `workflows/ui-script-gen.yaml` do not exist.
 
-- [ ] **Step 3: Create ui-script-gen skill manifest**
+- [x] **Step 3: Create ui-script-gen skill manifest**
 
 Create `skills/ui-script-gen/skill.yaml`:
 
@@ -2079,7 +2079,7 @@ requiredPlugins:
   - playwright
 ```
 
-- [ ] **Step 4: Create ui-script-gen workflow**
+- [x] **Step 4: Create ui-script-gen workflow**
 
 Create `workflows/ui-script-gen.yaml`:
 
@@ -2115,7 +2115,7 @@ nodes:
     dependsOn: [collect-evidence]
 ```
 
-- [ ] **Step 5: Verify Task 5**
+- [x] **Step 5: Verify Task 5**
 
 Run:
 
@@ -2125,7 +2125,7 @@ bun test tests/manifest-references.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit Task 5**
+- [x] **Step 6: Commit Task 5**
 
 ```bash
 git add skills/ui-script-gen/skill.yaml workflows/ui-script-gen.yaml tests/manifest-references.test.ts
@@ -2143,7 +2143,7 @@ git commit -m "feat: add ui script generation workflow manifests"
 - Modify: `packages/workflow-engine/src/runtime-factory.ts`
 - Create: `tests/ui-script-gen.runtime.test.ts`
 
-- [ ] **Step 1: Write failing ui-script-gen runtime smoke test**
+- [x] **Step 1: Write failing ui-script-gen runtime smoke test**
 
 Create `tests/ui-script-gen.runtime.test.ts`:
 
@@ -2278,7 +2278,7 @@ describe("ui-script-gen runtime", () => {
 });
 ```
 
-- [ ] **Step 2: Run runtime smoke and verify it fails**
+- [x] **Step 2: Run runtime smoke and verify it fails**
 
 Run:
 
@@ -2288,7 +2288,7 @@ bun test tests/ui-script-gen.runtime.test.ts
 
 Expected: FAIL because `WorkflowExecutionContext.inputs`, runtime factory action registration, and executor node dispatch are missing.
 
-- [ ] **Step 3: Add workflow execution inputs**
+- [x] **Step 3: Add workflow execution inputs**
 
 In `packages/workflow-engine/src/executor.ts`, update `WorkflowExecutionContext`:
 
@@ -2304,7 +2304,7 @@ export interface WorkflowExecutionContext {
 
 If `WorkflowExecutionContext` is also defined or exported from `packages/workflow-engine/src/types.ts` in the current branch, keep the shape identical there.
 
-- [ ] **Step 4: Register Playwright action in runtime factory**
+- [x] **Step 4: Register Playwright action in runtime factory**
 
 In `packages/workflow-engine/src/runtime-factory.ts`, import the mock runner:
 
@@ -2336,7 +2336,7 @@ In real mode for v0.2, register an explicit boundary error until a browser-backe
 
 This keeps real provider/Lanhu/XMind behavior intact while making the web automation runtime boundary explicit and tested.
 
-- [ ] **Step 5: Add ui-script-gen node dispatch**
+- [x] **Step 5: Add ui-script-gen node dispatch**
 
 In `packages/workflow-engine/src/executor.ts`, import automation types:
 
@@ -2498,7 +2498,7 @@ Add these cases to the dispatch switch:
 
 Add `checkAutomationScriptReadiness` to the gates import.
 
-- [ ] **Step 6: Verify Task 6**
+- [x] **Step 6: Verify Task 6**
 
 Run:
 
@@ -2509,7 +2509,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 6**
+- [x] **Step 7: Commit Task 6**
 
 ```bash
 git add packages/workflow-engine/src/executor.ts packages/workflow-engine/src/runtime-factory.ts tests/ui-script-gen.runtime.test.ts
@@ -2525,7 +2525,7 @@ git commit -m "feat: run ui script generation workflow"
 - Modify: `apps/cli/src/index.ts`
 - Create: `tests/ui-script-gen.cli.test.ts`
 
-- [ ] **Step 1: Write failing CLI test**
+- [x] **Step 1: Write failing CLI test**
 
 Create `tests/ui-script-gen.cli.test.ts`:
 
@@ -2646,7 +2646,7 @@ describe("ui-script-gen CLI", () => {
 });
 ```
 
-- [ ] **Step 2: Run CLI test and verify it fails**
+- [x] **Step 2: Run CLI test and verify it fails**
 
 Run:
 
@@ -2656,7 +2656,7 @@ bun test tests/ui-script-gen.cli.test.ts
 
 Expected: FAIL because the CLI does not recognize `ui-script-gen`.
 
-- [ ] **Step 3: Add workflow loader with workflow name**
+- [x] **Step 3: Add workflow loader with workflow name**
 
 In `apps/cli/src/index.ts`, replace `loadWorkflowDefinition` with:
 
@@ -2668,7 +2668,7 @@ function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
 }
 ```
 
-- [ ] **Step 4: Add ui-script-gen help text**
+- [x] **Step 4: Add ui-script-gen help text**
 
 Change the help command output to:
 
@@ -2676,7 +2676,7 @@ Change the help command output to:
     "kata-agent commands: test-case-gen, ui-script-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
 ```
 
-- [ ] **Step 5: Add ui-script-gen command**
+- [x] **Step 5: Add ui-script-gen command**
 
 Add this block before `workflow status`:
 
@@ -2708,7 +2708,7 @@ if (command === "ui-script-gen") {
 }
 ```
 
-- [ ] **Step 6: Verify Task 7**
+- [x] **Step 6: Verify Task 7**
 
 Run:
 
@@ -2719,7 +2719,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 7**
+- [x] **Step 7: Commit Task 7**
 
 ```bash
 git add apps/cli/src/index.ts tests/ui-script-gen.cli.test.ts
@@ -2735,7 +2735,7 @@ git commit -m "feat: expose ui script generation cli"
 - Create: `tests/automation-foundation-smoke.test.ts`
 - Modify: `README.md`
 
-- [ ] **Step 1: Write v0.2 foundation smoke**
+- [x] **Step 1: Write v0.2 foundation smoke**
 
 Create `tests/automation-foundation-smoke.test.ts`:
 
@@ -2859,7 +2859,7 @@ describe("v0.2 automation foundation smoke", () => {
 });
 ```
 
-- [ ] **Step 2: Run smoke test and verify it passes**
+- [x] **Step 2: Run smoke test and verify it passes**
 
 Run:
 
@@ -2869,7 +2869,7 @@ bun test tests/automation-foundation-smoke.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 3: Document v0.2 command in README**
+- [x] **Step 3: Document v0.2 command in README**
 
 Append this section to `README.md`:
 
@@ -2894,7 +2894,7 @@ bun apps/cli/src/index.ts ui-script-gen --project <project> --feature <feature> 
 v0.2 does not run mobile or desktop automation.
 ````
 
-- [ ] **Step 4: Verify Task 8**
+- [x] **Step 4: Verify Task 8**
 
 Run:
 
@@ -2905,7 +2905,7 @@ bun run typecheck
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit Task 8**
+- [x] **Step 5: Commit Task 8**
 
 ```bash
 git add README.md tests/automation-foundation-smoke.test.ts
@@ -2920,7 +2920,7 @@ git commit -m "docs: add v0.2 automation smoke"
 
 - No production files.
 
-- [ ] **Step 1: Run all tests**
+- [x] **Step 1: Run all tests**
 
 Run:
 
@@ -2930,7 +2930,7 @@ bun test
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Run TypeScript check**
+- [x] **Step 2: Run TypeScript check**
 
 Run:
 
@@ -2940,7 +2940,7 @@ bun run typecheck
 
 Expected: no TypeScript errors.
 
-- [ ] **Step 3: Run source scan**
+- [x] **Step 3: Run source scan**
 
 Run:
 
@@ -2950,7 +2950,7 @@ rg -n "Capability|MindMapExport|Archive|integration|type: branch|type: knowledge
 
 Expected: no active contract drift in checked source, tests, manifests, package metadata, or README.
 
-- [ ] **Step 4: Run secret/path scan**
+- [x] **Step 4: Run secret/path scan**
 
 Run:
 
@@ -2960,7 +2960,7 @@ rg -n "LANHU_COOKIE=|Bearer [A-Za-z0-9]|https://[^ ]*internal|/Users/|/private/"
 
 Expected: no hardcoded secrets, internal URLs, or local absolute paths.
 
-- [ ] **Step 5: Check all workspace packages**
+- [x] **Step 5: Check all workspace packages**
 
 Run:
 
@@ -2985,7 +2985,7 @@ plugins/playwright/package.json
 plugins/xmind/package.json
 ```
 
-- [ ] **Step 6: Commit verification updates if needed**
+- [x] **Step 6: Commit verification updates if needed**
 
 If verification required test or docs changes:
 
