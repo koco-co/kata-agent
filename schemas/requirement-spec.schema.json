@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/requirement-spec.schema.json",
+  "title": "RequirementSpec",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "title",
+    "status",
+    "rules",
+    "pageContracts",
+    "openItems",
+    "assumptions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "project": {
+      "type": "string"
+    },
+    "feature": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "confirmed",
+        "assumed",
+        "blocked"
+      ]
+    },
+    "rules": {
+      "type": "array"
+    },
+    "pageContracts": {
+      "type": "array"
+    },
+    "openItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unconfirmed",
+              "confirmed",
+              "assumed",
+              "deferred"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "assumptions": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

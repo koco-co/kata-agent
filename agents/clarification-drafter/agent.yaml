@@ -1,0 +1,7 @@
+name: clarification-drafter
+title: 需求澄清卷宗起草 Agent
+version: 0.1.0
+inputSchema: RequirementGapReport
+outputSchema: ClarificationDossier
+ownerSkill: test-case-gen
+promptPath: prompt.md

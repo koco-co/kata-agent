@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/lanhu-fetch-input.schema.json",
+  "title": "LanhuFetchInput",
+  "type": "object",
+  "required": [
+    "url",
+    "outputDir"
+  ],
+  "properties": {
+    "url": {
+      "type": "string"
+    },
+    "outputDir": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

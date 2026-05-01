@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/confirmation-draft.schema.json",
+  "title": "ConfirmationDraft",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "clarificationDossierRef",
+    "renderedMarkdownPath",
+    "renderedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "clarificationDossierRef": {
+      "type": "string"
+    },
+    "renderedMarkdownPath": {
+      "type": "string"
+    },
+    "renderedAt": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

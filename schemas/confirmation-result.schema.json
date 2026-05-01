@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/confirmation-result.schema.json",
+  "title": "ConfirmationResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "answers"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "answers": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

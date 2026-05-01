@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/requirement-analysis-input.schema.json",
+  "title": "RequirementAnalysisInput",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "requirementDraftRef",
+    "knowledgeConsultRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "requirementDraftRef": {
+      "type": "string"
+    },
+    "knowledgeConsultRef": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

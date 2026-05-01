@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/raw-source-file.schema.json",
+  "title": "RawSourceFile",
+  "type": "object",
+  "required": [
+    "id",
+    "path",
+    "mediaType",
+    "hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "mediaType": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

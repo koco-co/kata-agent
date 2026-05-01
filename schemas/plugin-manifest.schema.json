@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/plugin-manifest.schema.json",
+  "title": "PluginManifest",
+  "type": "object",
+  "required": ["name", "title", "version", "type", "actions", "permissions"],
+  "properties": {
+    "name": { "type": "string" },
+    "title": { "type": "string" },
+    "version": { "type": "string" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "requirement-source",
+        "artifact-export",
+        "automation",
+        "notification",
+        "issue-tracker",
+        "rule-source"
+      ]
+    },
+    "actions": { "type": "array" },
+    "permissions": { "type": "object" }
+  },
+  "additionalProperties": false
+}

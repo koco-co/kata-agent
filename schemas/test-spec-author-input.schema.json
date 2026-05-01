@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/test-spec-author-input.schema.json",
+  "title": "TestSpecAuthorInput",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "testPointSetRef",
+    "requirementSpecRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "testPointSetRef": {
+      "type": "string"
+    },
+    "requirementSpecRef": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

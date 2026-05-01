@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/workflow-definition.schema.json",
+  "title": "WorkflowDefinition",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "skill",
+    "nodes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "skill": {
+      "type": "string"
+    },
+    "nodes": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

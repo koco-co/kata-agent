@@ -1,0 +1,7 @@
+name: test-spec-reviewer
+title: 测试规格审查 Agent
+version: 0.1.0
+inputSchema: TestSpecReviewerInput
+outputSchema: ReviewReport
+ownerSkill: test-case-gen
+promptPath: prompt.md

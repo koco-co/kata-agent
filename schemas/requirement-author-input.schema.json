@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/requirement-author-input.schema.json",
+  "title": "RequirementAuthorInput",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "requirementDraftRef",
+    "gapReportRef",
+    "clarificationDossierRef",
+    "confirmationResultRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "requirementDraftRef": {
+      "type": "string"
+    },
+    "gapReportRef": {
+      "type": "string"
+    },
+    "clarificationDossierRef": {
+      "type": "string"
+    },
+    "confirmationResultRef": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

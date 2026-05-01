@@ -1,0 +1,7 @@
+name: requirement-analyst
+title: 需求缺口分析 Agent
+version: 0.1.0
+inputSchema: RequirementAnalysisInput
+outputSchema: RequirementGapReport
+ownerSkill: test-case-gen
+promptPath: prompt.md

@@ -1,0 +1,16 @@
+name: xmind
+title: XMind 导出
+version: 0.1.0
+type: artifact-export
+actions:
+  - id: xmind.export
+    title: 导出 XMind
+    inputSchema: TestSpec
+    outputSchema: XMindExport
+    sideEffects:
+      writeArtifacts: true
+permissions:
+  network: none
+  secrets: []
+  writeScopes:
+    - feature.exports

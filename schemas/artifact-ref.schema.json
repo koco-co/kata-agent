@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/artifact-ref.schema.json",
+  "title": "ArtifactRef",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "path",
+    "schemaVersion",
+    "createdBy",
+    "createdAt",
+    "hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

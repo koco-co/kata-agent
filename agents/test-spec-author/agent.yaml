@@ -1,0 +1,7 @@
+name: test-spec-author
+title: 测试规格编写 Agent
+version: 0.1.0
+inputSchema: TestSpecAuthorInput
+outputSchema: TestSpec
+ownerSkill: test-case-gen
+promptPath: prompt.md

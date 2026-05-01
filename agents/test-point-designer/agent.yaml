@@ -1,0 +1,7 @@
+name: test-point-designer
+title: 测试点设计 Agent
+version: 0.1.0
+inputSchema: RequirementSpec
+outputSchema: TestPointSet
+ownerSkill: test-case-gen
+promptPath: prompt.md
