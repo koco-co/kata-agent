@@ -19,6 +19,7 @@ import {
 } from "../packages/agent-runner/src/index";
 import {
   artifactPath,
+  createFeatureWorkspace,
   featureDir,
   writeJsonArtifact,
 } from "../packages/artifact-repo/src/index";
@@ -30,7 +31,11 @@ import type {
 import { consultKnowledge } from "../packages/knowledge-repo/src/index";
 import { PluginActionRegistry } from "../packages/plugin-runtime/src/index";
 import {
+  appendTrace,
+  createRunState,
   loadWorkflowState,
+  markSucceeded,
+  saveWorkflowState,
   WorkflowExecutor,
   type WorkflowDefinition,
 } from "../packages/workflow-engine/src/index";
@@ -125,6 +130,20 @@ const xmindOnlyWorkflow: WorkflowDefinition = {
   version: "0.1",
   skill: "test-case-gen",
   nodes: [{ id: "export-xmind", type: "tool", action: "xmind.export" }],
+};
+
+const designReportAfterGateWorkflow: WorkflowDefinition = {
+  id: "design-report-after-gate",
+  version: "0.1",
+  skill: "test-case-gen",
+  nodes: [
+    { id: "gate-readiness", type: "gate", gate: "requirement-test-readiness" },
+    {
+      id: "write-design-report",
+      type: "artifact",
+      dependsOn: ["gate-readiness"],
+    },
+  ],
 };
 
 describe("workflow executor", () => {
@@ -354,5 +373,53 @@ describe("workflow executor", () => {
 
     expect(result.state.status).toBe("succeeded");
     expect(readFileSync(stalePath, "utf8")).toBe("mock xmind export: 1 cases\n");
+  });
+
+  test("reconstructs gate results from trace when resuming into design report", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    const dir = createFeatureWorkspace(location);
+    const runId = "run-report-resume";
+    saveWorkflowState(
+      dir,
+      markSucceeded(
+        createRunState(designReportAfterGateWorkflow, runId),
+        "gate-readiness",
+      ),
+    );
+    appendTrace(dir, {
+      runId,
+      nodeId: "gate-readiness",
+      type: "gate-passed",
+      gateId: "requirement-test-readiness",
+      at: new Date().toISOString(),
+      details: { violations: [] },
+    });
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions: new PluginActionRegistry(),
+      agents: new Map(),
+    });
+
+    const result = await executor.resume({
+      location,
+      definition: designReportAfterGateWorkflow,
+      runId,
+    });
+
+    expect(result.state.status).toBe("succeeded");
+    const report = JSON.parse(
+      readFileSync(join(dir, "reports/design-report.json"), "utf8"),
+    ) as {
+      gateResults: Array<{
+        gateId: string;
+        passed: boolean;
+        violations: unknown[];
+      }>;
+    };
+    expect(report.gateResults).toEqual([
+      { gateId: "requirement-test-readiness", passed: true, violations: [] },
+    ]);
   });
 });

@@ -24,6 +24,9 @@ import type {
   RequirementSpec,
   RequirementSourceBundle,
   ReviewReport,
+  FlowSpec,
+  RunPlan,
+  RunRecord,
   SchemaName,
   TestPointSet,
   TestSpec,
@@ -32,13 +35,18 @@ import type {
 import type { PluginActionRegistry } from "../../plugin-runtime/src/index";
 import {
   buildDesignReport,
+  buildEvidencePackFromRunRecord,
+  buildFlowSpecFromTestSpec,
   buildRequirementAnalysisInput,
   buildRequirementAuthorInput,
+  buildRunPlanFromFlowSpec,
   buildTestSpecAuthorInput,
   buildTestSpecReviewerInput,
+  renderAutomationReportMarkdown,
   renderConfirmationDraft,
 } from "./artifact-builders";
 import {
+  checkAutomationScriptReadiness,
   checkAutomationReadiness,
   checkEvidenceBinding,
   checkRequirementClarity,
@@ -75,6 +83,7 @@ export interface WorkflowExecutionContext {
   definition: WorkflowDefinition;
   runId: string;
   sourceUrl?: string;
+  inputs?: Record<string, string>;
 }
 
 export interface WorkflowExecutionResult {
@@ -225,6 +234,174 @@ export class WorkflowExecutor {
         switch (node.id) {
           case "create-feature-workspace": {
             createFeatureWorkspace(context.location);
+            break;
+          }
+          case "create-automation-workspace": {
+            createFeatureWorkspace(context.location);
+            break;
+          }
+          case "load-test-spec": {
+            const path = context.inputs?.testSpecPath;
+            if (!path) throw new Error("Missing input: testSpecPath");
+            const indexRef = readArtifactIndex(context.location).artifacts.find(
+              (item) => item.type === "TestSpec" && item.path === path,
+            );
+            if (!indexRef) throw new Error(`Missing TestSpec artifact: ${path}`);
+            remember(indexRef);
+            values.set(
+              "TestSpec",
+              readJsonArtifact<TestSpec>(context.location, indexRef, "TestSpec"),
+            );
+            break;
+          }
+          case "build-flow-spec": {
+            const output = buildFlowSpecFromTestSpec(
+              refFor("TestSpec"),
+              valueFor<TestSpec>("TestSpec"),
+            );
+            writtenRefs.push(
+              writeJson(
+                "FlowSpec",
+                "automation/flow-spec.json",
+                output,
+                ["feature.automation"],
+              ),
+            );
+            break;
+          }
+          case "gate-automation-script-readiness": {
+            const result = checkAutomationScriptReadiness(
+              valueFor<TestSpec>("TestSpec"),
+            );
+            gateResults.push(result);
+            appendTrace(dir, {
+              runId: context.runId,
+              nodeId: node.id,
+              type: result.passed ? "gate-passed" : "gate-failed",
+              gateId: result.gateId,
+              at: new Date().toISOString(),
+              details: { violations: result.violations },
+            });
+            if (!result.passed) {
+              state = markBlocked(
+                state,
+                node.id,
+                result.gateId ?? "automation-script-readiness",
+              );
+              saveWorkflowState(dir, state);
+              return { state };
+            }
+            break;
+          }
+          case "build-run-plan": {
+            const mode = context.inputs?.mode ?? "mock";
+            if (mode !== "mock" && mode !== "real") {
+              throw new Error("Invalid input: mode");
+            }
+            const rendered = buildRunPlanFromFlowSpec(
+              refFor("FlowSpec"),
+              valueFor<FlowSpec>("FlowSpec"),
+              mode,
+            );
+            writtenRefs.push(
+              writeJson(
+                "RunPlan",
+                "automation/playwright/run-plan.json",
+                rendered.plan,
+                ["feature.automation"],
+              ),
+            );
+            writtenRefs.push(
+              remember(
+                writeArtifact(
+                  context.location,
+                  "PlaywrightScript",
+                  rendered.plan.scriptPath,
+                  rendered.script,
+                  "workflow-executor",
+                  { allowedScopes: ["feature.automation"] },
+                ),
+              ),
+            );
+            break;
+          }
+          case "execute-run-plan": {
+            const output =
+              (await this.services.actions.execute(
+                "playwright.runPlan",
+                valueFor<RunPlan>("RunPlan"),
+                actionContext,
+              )) as RunRecord;
+            writtenRefs.push(
+              writeJson(
+                "RunRecord",
+                "automation/run-record.json",
+                output,
+                ["feature.automation"],
+              ),
+            );
+            if (output.status === "failed") {
+              const message = `Playwright run failed: ${output.runId}`;
+              state = markFailed(state, node.id, message);
+              appendTrace(dir, {
+                runId: context.runId,
+                nodeId: node.id,
+                type: "exit",
+                actionId: node.action,
+                gateId: node.gate,
+                artifactRefs: writtenRefs.map((ref) => ref.id),
+                at: new Date().toISOString(),
+                message,
+              });
+              saveWorkflowState(dir, state);
+              return { state };
+            }
+            if (output.status === "blocked") {
+              const message = `Playwright run blocked: ${output.runId}`;
+              state = markBlocked(state, node.id, message);
+              appendTrace(dir, {
+                runId: context.runId,
+                nodeId: node.id,
+                type: "exit",
+                actionId: node.action,
+                gateId: node.gate,
+                artifactRefs: writtenRefs.map((ref) => ref.id),
+                at: new Date().toISOString(),
+                message,
+              });
+              saveWorkflowState(dir, state);
+              return { state };
+            }
+            break;
+          }
+          case "collect-evidence": {
+            const output = buildEvidencePackFromRunRecord(
+              refFor("RunRecord"),
+              valueFor<RunRecord>("RunRecord"),
+            );
+            writtenRefs.push(
+              writeJson(
+                "EvidencePack",
+                "automation/evidence-pack.json",
+                output,
+                ["feature.automation"],
+              ),
+            );
+            break;
+          }
+          case "write-automation-report": {
+            writtenRefs.push(
+              remember(
+                writeArtifact(
+                  context.location,
+                  "AutomationReportMarkdown",
+                  "reports/automation-report.md",
+                  renderAutomationReportMarkdown(valueFor<RunRecord>("RunRecord")),
+                  "workflow-executor",
+                  { allowedScopes: ["feature.reports"] },
+                ),
+              ),
+            );
             break;
           }
           case "ingest-requirement-source": {
@@ -503,10 +680,11 @@ export class WorkflowExecutor {
             break;
           }
           case "write-design-report": {
+            const traceEvents = readTraceEvents();
             const report = buildDesignReport(
               readArtifactIndex(context.location).artifacts,
-              gateResults,
-              readTraceEvents(),
+              mergeGateResults(gateResults, traceGateResults(traceEvents)),
+              traceEvents,
             );
             writtenRefs.push(
               writeJson("DesignReport", "reports/design-report.json", report, [
@@ -583,4 +761,48 @@ function renderDesignReportMarkdown(report: DesignReport): string {
     ),
   ];
   return `${lines.join("\n")}\n`;
+}
+
+function traceGateResults(traceEvents: TraceEvent[]): GateResult[] {
+  const results: GateResult[] = [];
+  for (const event of traceEvents) {
+    if (event.type !== "gate-passed" && event.type !== "gate-failed") continue;
+    const violations = event.details?.violations;
+    results.push({
+      gateId: event.gateId,
+      passed: event.type === "gate-passed",
+      violations: Array.isArray(violations)
+        ? violations.filter(isGateViolation)
+        : [],
+    });
+  }
+  return results;
+}
+
+function mergeGateResults(
+  current: GateResult[],
+  fromTrace: GateResult[],
+): GateResult[] {
+  const merged = new Map<string, GateResult>();
+  for (const result of fromTrace) {
+    merged.set(gateResultKey(result), result);
+  }
+  for (const result of current) {
+    merged.set(gateResultKey(result), result);
+  }
+  return [...merged.values()];
+}
+
+function gateResultKey(result: GateResult): string {
+  return result.gateId ?? JSON.stringify(result);
+}
+
+function isGateViolation(value: unknown): value is GateResult["violations"][number] {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Record<string, unknown>;
+  return (
+    typeof item.id === "string" &&
+    (item.severity === "error" || item.severity === "warning") &&
+    typeof item.message === "string"
+  );
 }

@@ -11,6 +11,7 @@ import type {
   LanhuFetchInput,
   RequirementDraft,
   RequirementSpec,
+  RunPlan,
   TestSpec,
 } from "../../domain/src/index";
 import {
@@ -22,6 +23,7 @@ import { fetchLanhuRequirement } from "../../../plugins/lanhu/src/real";
 import { mockFetchRequirement } from "../../../plugins/lanhu/src/mock";
 import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
 import { mockExportXMind } from "../../../plugins/xmind/src/mock";
+import { mockRunPlan } from "../../../plugins/playwright/src/mock";
 import { WorkflowExecutor } from "./executor";
 
 export interface RuntimeFactoryOptions {
@@ -233,6 +235,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("xmind.export", (input) =>
       mockExportXMind(input as TestSpec),
     );
+    actions.register("playwright.runPlan", (input, context) =>
+      mockRunPlan(input as RunPlan, context),
+    );
   } else {
     const config = new LocalConfigLoader({ rootDir: options.rootDir });
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
@@ -258,6 +263,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("xmind.export", (input, context) =>
       exportXMindFile(input as TestSpec, featureDir(context)),
     );
+    actions.register("playwright.runPlan", () => {
+      throw new Error("PLAYWRIGHT_REAL_RUNTIME_NOT_IMPLEMENTED");
+    });
   }
 
   actions.register("knowledge.consult", (input) =>

@@ -146,6 +146,28 @@ describe("automation domain contracts", () => {
     expect(validateSchema("EvidencePack", evidence).valid).toBe(true);
   });
 
+  test("allows ui-script-gen mode to be omitted but rejects bad mode", () => {
+    const defaultModeInput: UiScriptGenInput = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      testSpecPath: "test-spec/test-spec.json",
+    };
+
+    expect(
+      validateSchema("UiScriptGenInput", defaultModeInput).valid,
+    ).toBe(true);
+    expect(
+      validateSchema("UiScriptGenInput", {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rule-config",
+        testSpecPath: "test-spec/test-spec.json",
+        mode: "dry-run",
+      }).valid,
+    ).toBe(false);
+  });
+
   test("rejects non-web automation surfaces in v0.2", () => {
     const result = validateSchema("FlowSpec", {
       schemaVersion: "0.1",

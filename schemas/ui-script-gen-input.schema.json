@@ -3,7 +3,7 @@
   "$id": "https://kata-agent.local/schemas/ui-script-gen-input.schema.json",
   "title": "UiScriptGenInput",
   "type": "object",
-  "required": ["schemaVersion", "project", "feature", "testSpecPath", "mode"],
+  "required": ["schemaVersion", "project", "feature", "testSpecPath"],
   "properties": {
     "schemaVersion": { "const": "0.1" },
     "project": {

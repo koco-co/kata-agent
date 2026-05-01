@@ -5,7 +5,7 @@ export interface UiScriptGenInput {
   project: string;
   feature: string;
   testSpecPath: string;
-  mode: "mock" | "real";
+  mode?: "mock" | "real";
 }
 
 export type AutomationSurface = "web";
