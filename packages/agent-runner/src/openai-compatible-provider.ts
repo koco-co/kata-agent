@@ -20,15 +20,17 @@ export class OpenAICompatibleProvider implements ProviderAdapter {
   };
 
   private readonly fetchImpl: typeof fetch;
+  private readonly baseUrl: string;
 
   constructor(private readonly options: OpenAICompatibleProviderOptions) {
     this.id = options.id;
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
   }
 
   async generate(request: ProviderRequest): Promise<ProviderResponse> {
     const started = Date.now();
-    const response = await this.fetchImpl(`${this.options.baseUrl}/chat/completions`, {
+    const response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -42,9 +44,11 @@ export class OpenAICompatibleProvider implements ProviderAdapter {
           request.responseFormat === "json" || typeof request.responseFormat === "object"
             ? { type: "json_object" }
             : undefined,
+        max_tokens: request.maxTokens,
+        stop: request.stopSequences,
       }),
     });
-    if (!response.ok) throw new Error(`PROVIDER_TRANSIENT ${response.status}`);
+    if (!response.ok) throw providerError(response.status);
     const json = (await response.json()) as JsonValue & {
       choices?: Array<{ message?: { content?: string } }>;
       usage?: { prompt_tokens?: number; completion_tokens?: number };
@@ -61,4 +65,14 @@ export class OpenAICompatibleProvider implements ProviderAdapter {
       raw: json,
     };
   }
+}
+
+function providerError(status: number): Error {
+  if (status === 401 || status === 403) {
+    return new Error(`MISSING_SECRET provider authentication failed: ${status}`);
+  }
+  if (status >= 400 && status < 500 && status !== 429) {
+    return new Error(`SCHEMA_VALIDATION_FAILED provider request failed: ${status}`);
+  }
+  return new Error(`PROVIDER_TRANSIENT ${status}`);
 }
