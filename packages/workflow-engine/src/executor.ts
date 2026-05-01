@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import type {
   AgentManifest,
   AgentRunner,
@@ -446,6 +446,7 @@ export class WorkflowExecutor {
             break;
           }
           case "export-xmind": {
+            const actionStartedAt = Date.now();
             const output =
               (await this.services.actions.execute(
                 "xmind.export",
@@ -460,7 +461,11 @@ export class WorkflowExecutor {
                 ["feature.exports"],
               ),
             );
-            if (!existsSync(artifactPath(context.location, output.outputPath))) {
+            const xmindPath = artifactPath(context.location, output.outputPath);
+            const actionCreatedXMind =
+              existsSync(xmindPath) &&
+              statSync(xmindPath).mtimeMs >= actionStartedAt;
+            if (!actionCreatedXMind) {
               writtenRefs.push(
                 remember(
                   writeArtifact(

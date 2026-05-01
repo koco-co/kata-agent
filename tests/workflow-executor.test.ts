@@ -5,6 +5,7 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
+  utimesSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -65,6 +66,66 @@ function loadWorkflow(): WorkflowDefinition {
     readFileSync(join(repoRoot, "workflows", "test-case-gen.yaml"), "utf8"),
   ) as WorkflowDefinition;
 }
+
+function smallTestSpec(): TestSpec {
+  return {
+    schemaVersion: "0.1",
+    project: "demo",
+    feature: "rule-config",
+    title: "Rule Config Test Spec",
+    requirementRef: "requirement/spec/requirement-spec.json",
+    status: "reviewed",
+    modules: [
+      {
+        id: "module-rules",
+        name: "Rules",
+        requirementRefs: ["REQ-1"],
+        cases: [
+          {
+            id: "case-save-rule",
+            title: "Save a rule",
+            priority: "P0",
+            requirementRefs: ["REQ-1"],
+            steps: [],
+            assertions: [],
+            automation: {
+              surface: "web",
+              readiness: "ready",
+              uiContractRefs: [],
+              blockers: [],
+            },
+            traceability: {
+              requirementRefs: ["REQ-1"],
+              sourceRefs: ["SRC-1"],
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function writeTestSpec(location: {
+  rootDir: string;
+  project: string;
+  feature: string;
+}): void {
+  writeJsonArtifact(
+    location,
+    "TestSpec",
+    "test-spec/test-spec.json",
+    smallTestSpec(),
+    "test",
+    { allowedScopes: ["feature.test-spec"] },
+  );
+}
+
+const xmindOnlyWorkflow: WorkflowDefinition = {
+  id: "xmind-only",
+  version: "0.1",
+  skill: "test-case-gen",
+  nodes: [{ id: "export-xmind", type: "tool", action: "xmind.export" }],
+};
 
 describe("workflow executor", () => {
   test("runs deterministic workflow until human confirmation waits", async () => {
@@ -176,49 +237,7 @@ describe("workflow executor", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
     const location = { rootDir, project: "demo", feature: "rule-config" };
-    const spec: TestSpec = {
-      schemaVersion: "0.1",
-      project: "demo",
-      feature: "rule-config",
-      title: "Rule Config Test Spec",
-      requirementRef: "requirement/spec/requirement-spec.json",
-      status: "reviewed",
-      modules: [
-        {
-          id: "module-rules",
-          name: "Rules",
-          requirementRefs: ["REQ-1"],
-          cases: [
-            {
-              id: "case-save-rule",
-              title: "Save a rule",
-              priority: "P0",
-              requirementRefs: ["REQ-1"],
-              steps: [],
-              assertions: [],
-              automation: {
-                surface: "web",
-                readiness: "ready",
-                uiContractRefs: [],
-                blockers: [],
-              },
-              traceability: {
-                requirementRefs: ["REQ-1"],
-                sourceRefs: ["SRC-1"],
-              },
-            },
-          ],
-        },
-      ],
-    };
-    writeJsonArtifact(
-      location,
-      "TestSpec",
-      "test-spec/test-spec.json",
-      spec,
-      "test",
-      { allowedScopes: ["feature.test-spec"] },
-    );
+    writeTestSpec(location);
 
     const actions = new PluginActionRegistry();
     actions.register("xmind.export", (_, context) => {
@@ -241,12 +260,7 @@ describe("workflow executor", () => {
 
     const result = await executor.start({
       location,
-      definition: {
-        id: "xmind-only",
-        version: "0.1",
-        skill: "test-case-gen",
-        nodes: [{ id: "export-xmind", type: "tool", action: "xmind.export" }],
-      },
+      definition: xmindOnlyWorkflow,
       runId: "run-xmind",
     });
 
@@ -263,5 +277,42 @@ describe("workflow executor", () => {
         "utf8",
       ),
     ).toContain('"outputPath": "exports/xmind/test-spec.xmind"');
+  });
+
+  test("overwrites stale xmind file with mock fallback", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    const outputPath = "exports/xmind/test-spec.xmind";
+    const stalePath = artifactPath(location, outputPath);
+    writeTestSpec(location);
+    mkdirSync(dirname(stalePath), { recursive: true });
+    writeFileSync(stalePath, "stale xmind content\n");
+    const staleTime = new Date("2020-01-01T00:00:00.000Z");
+    utimesSync(stalePath, staleTime, staleTime);
+
+    const actions = new PluginActionRegistry();
+    actions.register("xmind.export", () => {
+      return {
+        schemaVersion: "0.1",
+        outputPath,
+        caseCount: 1,
+      } satisfies XMindExport;
+    });
+
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const result = await executor.start({
+      location,
+      definition: xmindOnlyWorkflow,
+      runId: "run-xmind-stale",
+    });
+
+    expect(result.state.status).toBe("succeeded");
+    expect(readFileSync(stalePath, "utf8")).toBe("mock xmind export: 1 cases\n");
   });
 });
