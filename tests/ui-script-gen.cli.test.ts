@@ -121,4 +121,102 @@ describe("ui-script-gen cli", () => {
     expect(existsSync(reportPath)).toBe(true);
     expect(readFileSync(reportPath, "utf8")).toContain("Automation Report");
   });
+
+  test("rejects schema-invalid test spec path at the CLI boundary", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-ui-cli-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    writeJsonArtifact(
+      location,
+      "TestSpec",
+      "test-spec/alt.json",
+      smokeSpec(),
+      "test",
+      { allowedScopes: ["feature.test-spec"] },
+    );
+
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "apps/cli/src/index.ts",
+        "ui-script-gen",
+        "--project",
+        "demo",
+        "--feature",
+        "rule-config",
+        "--test-spec",
+        "test-spec/alt.json",
+        "--root",
+        rootDir,
+      ],
+      { cwd: repoRoot, stderr: "pipe" },
+    );
+    const error = await new Response(proc.stderr).text();
+    const exitCode = await proc.exited;
+
+    expect(exitCode).toBe(1);
+    expect(error).toContain("SCHEMA_VALIDATION_FAILED UiScriptGenInput");
+  });
+
+  test("resumes ui-script-gen runs using the persisted workflow id", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-ui-cli-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    writeJsonArtifact(
+      location,
+      "TestSpec",
+      "test-spec/test-spec.json",
+      smokeSpec(),
+      "test",
+      { allowedScopes: ["feature.test-spec"] },
+    );
+
+    const start = Bun.spawn(
+      [
+        "bun",
+        "apps/cli/src/index.ts",
+        "ui-script-gen",
+        "--project",
+        "demo",
+        "--feature",
+        "rule-config",
+        "--test-spec",
+        "test-spec/test-spec.json",
+        "--root",
+        rootDir,
+      ],
+      { cwd: repoRoot, stderr: "pipe" },
+    );
+    const startOutput = await new Response(start.stdout).text();
+    const startError = await new Response(start.stderr).text();
+    expect(await start.exited, startError).toBe(0);
+    const started = JSON.parse(startOutput) as {
+      runId: string;
+      status: string;
+    };
+    expect(started.status).toBe("succeeded");
+
+    const resume = Bun.spawn(
+      [
+        "bun",
+        "apps/cli/src/index.ts",
+        "workflow",
+        "resume",
+        "--feature-dir",
+        featureDir(location),
+        "--run",
+        started.runId,
+      ],
+      { cwd: repoRoot, stderr: "pipe" },
+    );
+    const resumeOutput = await new Response(resume.stdout).text();
+    const resumeError = await new Response(resume.stderr).text();
+    expect(await resume.exited, resumeError).toBe(0);
+    const resumed = JSON.parse(resumeOutput) as {
+      status: string;
+      currentNode: string;
+    };
+    expect(resumed.status).toBe("succeeded");
+    expect(resumed.currentNode).toBe("write-automation-report");
+  });
 });

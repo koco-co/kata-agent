@@ -8,6 +8,7 @@ import { writeArtifactInFeatureDir } from "../../../packages/artifact-repo/src/i
 import {
   assertValidSchema,
   type ConfirmationResult,
+  type UiScriptGenInput,
 } from "../../../packages/domain/src/index";
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
 import {
@@ -55,6 +56,9 @@ function runtimeMode(): RuntimeFactoryOptions["mode"] {
 }
 
 function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    throw new Error(`Invalid workflow name: ${name}`);
+  }
   return YAML.parse(
     readFileSync(join(process.cwd(), "workflows", `${name}.yaml`), "utf8"),
   ) as WorkflowDefinition;
@@ -117,6 +121,19 @@ if (command === "ui-script-gen") {
   const testSpecPath = requireArg("--test-spec");
   const runId = argValue("--run") ?? randomUUID();
   const mode = runtimeMode();
+  const input: UiScriptGenInput = {
+    schemaVersion: "0.1",
+    project,
+    feature,
+    testSpecPath,
+    mode,
+  };
+  try {
+    assertValidSchema("UiScriptGenInput", input);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
   const { executor } = createRuntimeServices({ rootDir, mode });
   const result = await executor.start({
     location: { rootDir, project, feature },
@@ -157,13 +174,14 @@ if (command === "workflow resume") {
   const targetFeatureDir = requireArg("--feature-dir");
   const runId = requireArg("--run");
   const location = parseFeatureDir(targetFeatureDir);
+  const state = loadWorkflowState(targetFeatureDir, runId);
   const { executor } = createRuntimeServices({
     rootDir: location.rootDir,
     mode: runtimeMode(),
   });
   const result = await executor.resume({
     location,
-    definition: loadWorkflowDefinition(),
+    definition: loadWorkflowDefinition(state.workflowId),
     runId,
   });
   console.log(
