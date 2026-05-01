@@ -9,3 +9,7 @@ export { ProviderRegistry } from "./provider-registry";
 export type { ProviderSelectionHint } from "./provider-registry";
 export { AgentRunner } from "./agent-runner";
 export { MockProvider } from "./mock-provider";
+export {
+  OpenAICompatibleProvider,
+  type OpenAICompatibleProviderOptions,
+} from "./openai-compatible-provider";
