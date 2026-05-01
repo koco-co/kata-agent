@@ -84,6 +84,11 @@ describe("domain contracts", () => {
         "cancelled",
       ],
     );
+    expectEnum(
+      "ConfirmationResult",
+      ["properties", "answers", "items", "properties", "status"],
+      ["confirmed", "rejected", "assumed", "unanswered"],
+    );
     expectEnum("TraceEvent", ["properties", "type"], [
       "enter",
       "exit",

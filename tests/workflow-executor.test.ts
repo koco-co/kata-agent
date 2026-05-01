@@ -233,6 +233,46 @@ describe("workflow executor", () => {
     );
   });
 
+  test("marks dispatch error failed and saves state", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+
+    const actions = new PluginActionRegistry();
+    actions.register("lanhu.fetchRequirement", () => {
+      throw new Error("PLUGIN_NETWORK_TRANSIENT 503");
+    });
+
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const result = await executor.start({
+      location,
+      definition: loadWorkflow(),
+      runId: "run-transient",
+      sourceUrl: "mock://poor-prd",
+    });
+
+    const dir = featureDir(location);
+    const saved = loadWorkflowState(dir, "run-transient");
+    const node = result.state.nodes["ingest-requirement-source"];
+    const savedNode = saved.nodes["ingest-requirement-source"];
+
+    expect(result.state.status).toBe("failed");
+    expect(saved.status).toBe("failed");
+    expect(node.status).toBe("failed");
+    expect(node.error).toContain("PLUGIN_NETWORK_TRANSIENT 503");
+    expect(savedNode.status).toBe("failed");
+    expect(savedNode.retryable).toBe(true);
+    expect(savedNode.error).toContain("PLUGIN_NETWORK_TRANSIENT 503");
+    expect(readFileSync(join(dir, "traces", "run-transient.jsonl"), "utf8")).toContain(
+      '"message":"PLUGIN_NETWORK_TRANSIENT 503"',
+    );
+  });
+
   test("does not overwrite xmind file created by export action", async () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);

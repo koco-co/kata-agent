@@ -5,7 +5,10 @@ import { readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import YAML from "yaml";
 import { writeArtifactInFeatureDir } from "../../../packages/artifact-repo/src/index";
-import { SCHEMA_VERSION } from "../../../packages/core/src/index";
+import {
+  assertValidSchema,
+  type ConfirmationResult,
+} from "../../../packages/domain/src/index";
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
 import {
   appendTrace,
@@ -153,21 +156,15 @@ if (command === "confirmation import") {
   const featureDir = requireArg("--feature-dir");
   const runId = requireArg("--run");
   const file = requireArg("--file");
-  const rawConfirmation = readFileSync(file, "utf8");
-  const confirmation = JSON.parse(rawConfirmation) as {
-    schemaVersion?: unknown;
-    answers?: unknown;
-  };
-  if (
-    // v0.1b: validate ConfirmationResult with Ajv instead of shape checks.
-    confirmation.schemaVersion !== SCHEMA_VERSION ||
-    !Array.isArray(confirmation.answers)
-  ) {
-    console.error(
-      "Invalid ConfirmationResult: expected schemaVersion 0.1 and answers[]",
-    );
+  let confirmation: ConfirmationResult;
+  try {
+    confirmation = JSON.parse(readFileSync(file, "utf8")) as ConfirmationResult;
+    assertValidSchema("ConfirmationResult", confirmation);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
+  const canonicalConfirmation = `${JSON.stringify(confirmation, null, 2)}\n`;
   const state = loadWorkflowState(featureDir, runId);
   const waitingNode =
     state.currentNode && state.nodes[state.currentNode]?.status === "waiting"
@@ -189,7 +186,7 @@ if (command === "confirmation import") {
     featureDir,
     "ConfirmationResult",
     "requirement/confirmed/confirmation-result.json",
-    rawConfirmation,
+    canonicalConfirmation,
     "confirmation import",
     {
       allowedScopes: ["feature.requirement.confirmed"],

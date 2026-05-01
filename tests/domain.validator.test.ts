@@ -43,6 +43,18 @@ describe("domain schema validator", () => {
     expect(result.errors.join("\n")).toContain("/rules/0");
   });
 
+  test("rejects invalid ConfirmationResult answer status", () => {
+    const result = validateSchema("ConfirmationResult", {
+      schemaVersion: "0.1",
+      answers: [
+        { questionId: "GAP-001", status: "accepted", answer: "保存" },
+      ],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("/answers/0/status");
+  });
+
   test("rejects RequirementSpec project path escapes", () => {
     const result = validateSchema("RequirementSpec", {
       schemaVersion: "0.1",

@@ -52,6 +52,7 @@ import {
 import {
   createRunState,
   markBlocked,
+  markFailed,
   markRunning,
   markSucceeded,
   markWaiting,
@@ -541,7 +542,24 @@ export class WorkflowExecutor {
         });
         saveWorkflowState(dir, state);
       } catch (error) {
-        throw error;
+        const message = error instanceof Error ? error.message : String(error);
+        state = markFailed(
+          state,
+          node.id,
+          message,
+          message.includes("TRANSIENT") || message.includes("429"),
+        );
+        appendTrace(dir, {
+          runId: context.runId,
+          nodeId: node.id,
+          type: "exit",
+          actionId: node.action,
+          gateId: node.gate,
+          at: new Date().toISOString(),
+          message,
+        });
+        saveWorkflowState(dir, state);
+        return { state };
       }
     }
 

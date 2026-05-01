@@ -12,7 +12,31 @@
       "const": "0.1"
     },
     "answers": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "questionId",
+          "status"
+        ],
+        "properties": {
+          "questionId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "rejected",
+              "assumed",
+              "unanswered"
+            ]
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": true

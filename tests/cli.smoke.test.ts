@@ -101,7 +101,7 @@ describe("cli", () => {
         join(featureDir, "requirement", "confirmed", "confirmation-result.json"),
         "utf8",
       ),
-    ).toContain('"answers":[]');
+    ).toBe('{\n  "schemaVersion": "0.1",\n  "answers": []\n}\n');
     expect(
       readFileSync(join(featureDir, "traces", "run-1.jsonl"), "utf8"),
     ).toContain('"type":"human-import"');
@@ -110,5 +110,60 @@ describe("cli", () => {
     );
     expect(index.project).toBe("demo");
     expect(index.feature).toBe("rule-config");
+  });
+
+  test("rejects invalid confirmation answer status before succeeding waiting node", async () => {
+    const featureDir = mkdtempSync(join(tmpdir(), "kata-agent-feature-"));
+    roots.push(featureDir);
+    mkdirSync(join(featureDir, ".state"), { recursive: true });
+    const definition: WorkflowDefinition = {
+      id: "test-case-gen",
+      version: "0.1.0",
+      skill: "test-case-gen",
+      nodes: [{ id: "await-confirmation-result", type: "human" }],
+    };
+    saveWorkflowState(
+      featureDir,
+      markWaiting(
+        createRunState(definition, "run-1"),
+        "await-confirmation-result",
+        "ConfirmationResult",
+      ),
+    );
+    const confirmationPath = join(featureDir, "confirmation-result.json");
+    writeFileSync(
+      confirmationPath,
+      JSON.stringify({
+        schemaVersion: "0.1",
+        answers: [
+          { questionId: "GAP-001", status: "accepted", answer: "保存" },
+        ],
+      }),
+    );
+
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "apps/cli/src/index.ts",
+        "confirmation",
+        "import",
+        "--feature-dir",
+        featureDir,
+        "--run",
+        "run-1",
+        "--file",
+        confirmationPath,
+      ],
+      { cwd: repoRoot, stderr: "pipe" },
+    );
+    const error = await new Response(proc.stderr).text();
+    const exitCode = await proc.exited;
+    const saved = JSON.parse(
+      readFileSync(join(featureDir, ".state", "run-1.json"), "utf8"),
+    );
+
+    expect(exitCode).toBe(1);
+    expect(error).toContain("SCHEMA_VALIDATION_FAILED ConfirmationResult");
+    expect(saved.nodes["await-confirmation-result"].status).toBe("waiting");
   });
 });
