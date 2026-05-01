@@ -17,7 +17,7 @@
       "type": "string"
     },
     "questions": {
-      "type": "string"
+      "type": "array"
     },
     "assumptions": {
       "type": "array"

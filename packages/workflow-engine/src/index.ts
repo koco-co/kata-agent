@@ -41,3 +41,9 @@ export {
   buildTestSpecReviewerInput,
   renderConfirmationDraft,
 } from "./artifact-builders";
+export type {
+  WorkflowExecutionContext,
+  WorkflowExecutionResult,
+  WorkflowExecutorServices,
+} from "./executor";
+export { WorkflowExecutor } from "./executor";
