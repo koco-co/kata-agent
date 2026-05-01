@@ -8,3 +8,4 @@ export {
   writeArtifact,
   writeArtifactInFeatureDir,
 } from "./store";
+export { readJsonArtifact, writeJsonArtifact } from "./validation";
