@@ -32,3 +32,9 @@ export type {
 export type { DesignReport, ReviewReport, XMindExport } from "./review";
 export type { KnowledgeSuggestion } from "./knowledge";
 export { SCHEMA_NAMES, SCHEMA_REGISTRY, type SchemaName } from "./schemas";
+export {
+  assertValidSchema,
+  getSchemaValidator,
+  validateSchema,
+  type SchemaValidationResult,
+} from "./validator";

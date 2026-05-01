@@ -33,3 +33,17 @@ export {
   checkRequirementClarity,
   checkTestSpecValidity,
 } from "./gates";
+export {
+  buildDesignReport,
+  buildRequirementAnalysisInput,
+  buildRequirementAuthorInput,
+  buildTestSpecAuthorInput,
+  buildTestSpecReviewerInput,
+  renderConfirmationDraft,
+} from "./artifact-builders";
+export type {
+  WorkflowExecutionContext,
+  WorkflowExecutionResult,
+  WorkflowExecutorServices,
+} from "./executor";
+export { WorkflowExecutor } from "./executor";

@@ -33,7 +33,7 @@ describe("cli", () => {
     expect(output).toContain("kata-agent commands");
   });
 
-  test("workflow resume is explicit v0.1b scope", async () => {
+  test("workflow resume requires a feature directory", async () => {
     const proc = Bun.spawn(
       ["bun", "apps/cli/src/index.ts", "workflow", "resume", "--run", "run-1"],
       { cwd: repoRoot, stderr: "pipe" },
@@ -41,7 +41,7 @@ describe("cli", () => {
     const error = await new Response(proc.stderr).text();
     const exitCode = await proc.exited;
     expect(exitCode).toBe(1);
-    expect(error).toContain("workflow resume is implemented in v0.1b");
+    expect(error).toContain("Missing required argument: --feature-dir");
   });
 
   test("imports confirmation and marks waiting node succeeded", async () => {
@@ -80,6 +80,10 @@ describe("cli", () => {
         "run-1",
         "--file",
         confirmationPath,
+        "--project",
+        "demo",
+        "--feature",
+        "rule-config",
       ],
       { cwd: repoRoot },
     );
@@ -101,5 +105,10 @@ describe("cli", () => {
     expect(
       readFileSync(join(featureDir, "traces", "run-1.jsonl"), "utf8"),
     ).toContain('"type":"human-import"');
+    const index = JSON.parse(
+      readFileSync(join(featureDir, "artifact-index.json"), "utf8"),
+    );
+    expect(index.project).toBe("demo");
+    expect(index.feature).toBe("rule-config");
   });
 });

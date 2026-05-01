@@ -126,7 +126,16 @@ export function writeArtifactInFeatureDir(
   artifacts.push(ref);
   writeFileSync(
     artifactPathInFeatureDir(featureWorkspaceDir, "artifact-index.json"),
-    JSON.stringify({ ...index, artifacts }, null, 2),
+    JSON.stringify(
+      {
+        ...index,
+        project: options.project ?? index.project,
+        feature: options.feature ?? index.feature,
+        artifacts,
+      },
+      null,
+      2,
+    ),
   );
   return ref;
 }
