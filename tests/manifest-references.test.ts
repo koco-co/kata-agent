@@ -169,4 +169,70 @@ describe("manifest schema references", () => {
       }
     }
   });
+
+  test("ui-script-gen workflow remains web automation only", () => {
+    const skill = YAML.parse(
+      readFileSync("skills/ui-script-gen/skill.yaml", "utf8"),
+    ) as {
+      name: string;
+      workflow: string;
+      requiredPlugins?: string[];
+    };
+    const workflow = YAML.parse(
+      readFileSync("workflows/ui-script-gen.yaml", "utf8"),
+    ) as {
+      skill: string;
+      nodes: Array<{
+        id: string;
+        type: string;
+        action?: string;
+        gate?: string;
+        dependsOn?: string[];
+      }>;
+    };
+    expect(skill.name).toBe("ui-script-gen");
+    expect(skill.workflow).toBe("ui-script-gen");
+    expect(skill.requiredPlugins).toEqual(["playwright"]);
+    expect(workflow.skill).toBe("ui-script-gen");
+    expect(workflow.nodes).toEqual([
+      { id: "create-automation-workspace", type: "artifact" },
+      {
+        id: "load-test-spec",
+        type: "artifact",
+        dependsOn: ["create-automation-workspace"],
+      },
+      {
+        id: "build-flow-spec",
+        type: "artifact",
+        dependsOn: ["load-test-spec"],
+      },
+      {
+        id: "gate-automation-script-readiness",
+        type: "gate",
+        gate: "automation-script-readiness",
+        dependsOn: ["build-flow-spec"],
+      },
+      {
+        id: "build-run-plan",
+        type: "artifact",
+        dependsOn: ["gate-automation-script-readiness"],
+      },
+      {
+        id: "execute-run-plan",
+        type: "tool",
+        action: "playwright.runPlan",
+        dependsOn: ["build-run-plan"],
+      },
+      {
+        id: "collect-evidence",
+        type: "artifact",
+        dependsOn: ["execute-run-plan"],
+      },
+      {
+        id: "write-automation-report",
+        type: "artifact",
+        dependsOn: ["collect-evidence"],
+      },
+    ]);
+  });
 });

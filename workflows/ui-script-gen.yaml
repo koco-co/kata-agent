@@ -1,0 +1,29 @@
+id: ui-script-gen
+version: 0.2.0
+skill: ui-script-gen
+nodes:
+  - id: create-automation-workspace
+    type: artifact
+  - id: load-test-spec
+    type: artifact
+    dependsOn: [create-automation-workspace]
+  - id: build-flow-spec
+    type: artifact
+    dependsOn: [load-test-spec]
+  - id: gate-automation-script-readiness
+    type: gate
+    gate: automation-script-readiness
+    dependsOn: [build-flow-spec]
+  - id: build-run-plan
+    type: artifact
+    dependsOn: [gate-automation-script-readiness]
+  - id: execute-run-plan
+    type: tool
+    action: playwright.runPlan
+    dependsOn: [build-run-plan]
+  - id: collect-evidence
+    type: artifact
+    dependsOn: [execute-run-plan]
+  - id: write-automation-report
+    type: artifact
+    dependsOn: [collect-evidence]
