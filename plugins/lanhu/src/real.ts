@@ -30,10 +30,43 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function assertTrustedCookieTarget(url: string): void {
+  const parsed = new URL(url);
+  if (
+    parsed.protocol !== "https:" ||
+    !parsed.hostname.toLowerCase().includes("lanhu")
+  ) {
+    throw new Error(
+      "MISSING_SECRET refusing to send Lanhu cookie to untrusted host",
+    );
+  }
+}
+
+function assertPathSegment(name: "project" | "feature", value: string): void {
+  if (
+    value === "" ||
+    value === "." ||
+    value === ".." ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    /^[a-z]:/i.test(value)
+  ) {
+    throw new Error(`INVALID_INPUT invalid ${name} path segment`);
+  }
+}
+
 export async function fetchLanhuRequirement(
   input: LanhuFetchInput,
   context: LanhuFetchContext,
 ): Promise<RequirementSourceBundle> {
+  if (input.outputDir !== "sources/lanhu") {
+    throw new Error("INVALID_INPUT outputDir must be sources/lanhu");
+  }
+  assertPathSegment("project", context.project);
+  assertPathSegment("feature", context.feature);
+  if (context.cookie) {
+    assertTrustedCookieTarget(input.url);
+  }
   const fetchImpl = context.fetchImpl ?? fetch;
   const response = await fetchImpl(input.url, {
     headers: context.cookie ? { cookie: context.cookie } : {},
