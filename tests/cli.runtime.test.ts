@@ -7,6 +7,24 @@ import { featureDir } from "../packages/artifact-repo/src/index";
 const repoRoot = join(import.meta.dir, "..");
 const roots: string[] = [];
 
+async function runCli(args: string[]): Promise<{
+  output: string;
+  error: string;
+  exitCode: number;
+}> {
+  const proc = Bun.spawn(["bun", "apps/cli/src/index.ts", ...args], {
+    cwd: repoRoot,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [output, error, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  return { output, error, exitCode };
+}
+
 afterEach(() => {
   for (const root of roots.splice(0)) {
     rmSync(root, { recursive: true, force: true });
@@ -18,10 +36,7 @@ describe("cli runtime", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
 
-    const start = Bun.spawn(
-      [
-        "bun",
-        "apps/cli/src/index.ts",
+    const start = await runCli([
         "test-case-gen",
         "--project",
         "demo",
@@ -31,13 +46,9 @@ describe("cli runtime", () => {
         "mock://poor-prd",
         "--root",
         rootDir,
-      ],
-      { cwd: repoRoot, stderr: "pipe" },
-    );
-    const startOutput = await new Response(start.stdout).text();
-    const startError = await new Response(start.stderr).text();
-    expect(await start.exited, startError).toBe(0);
-    const started = JSON.parse(startOutput) as {
+    ]);
+    expect(start.exitCode, start.error).toBe(0);
+    const started = JSON.parse(start.output) as {
       runId: string;
       status: string;
       currentNode: string;
@@ -59,10 +70,7 @@ describe("cli runtime", () => {
         ],
       }),
     );
-    const imported = Bun.spawn(
-      [
-        "bun",
-        "apps/cli/src/index.ts",
+    const imported = await runCli([
         "confirmation",
         "import",
         "--feature-dir",
@@ -75,28 +83,19 @@ describe("cli runtime", () => {
         "demo",
         "--feature",
         "rule-config",
-      ],
-      { cwd: repoRoot, stderr: "pipe" },
-    );
-    expect(await imported.exited).toBe(0);
+    ]);
+    expect(imported.exitCode, imported.error).toBe(0);
 
-    const resume = Bun.spawn(
-      [
-        "bun",
-        "apps/cli/src/index.ts",
+    const resume = await runCli([
         "workflow",
         "resume",
         "--feature-dir",
         dir,
         "--run",
         started.runId,
-      ],
-      { cwd: repoRoot, stderr: "pipe" },
-    );
-    const resumeOutput = await new Response(resume.stdout).text();
-    const resumeError = await new Response(resume.stderr).text();
-    expect(await resume.exited, resumeError).toBe(0);
-    const resumed = JSON.parse(resumeOutput) as { status: string };
+    ]);
+    expect(resume.exitCode, resume.error).toBe(0);
+    const resumed = JSON.parse(resume.output) as { status: string };
     expect(resumed.status).toBe("succeeded");
   });
 });
