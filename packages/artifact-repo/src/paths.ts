@@ -6,7 +6,22 @@ export interface FeatureLocation {
   feature: string;
 }
 
+function assertWorkspaceSegment(name: "project" | "feature", value: string): void {
+  if (
+    value === "" ||
+    value === "." ||
+    value === ".." ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    /^[a-z]:/i.test(value)
+  ) {
+    throw new Error(`Feature location ${name} must be a single path segment`);
+  }
+}
+
 export function featureDir(location: FeatureLocation): string {
+  assertWorkspaceSegment("project", location.project);
+  assertWorkspaceSegment("feature", location.feature);
   return join(
     location.rootDir,
     "projects",

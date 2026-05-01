@@ -29,10 +29,233 @@
       "type": "string"
     },
     "status": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "draft",
+        "reviewed",
+        "blocked"
+      ]
     },
     "modules": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "requirementRefs",
+          "cases"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "requirementRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "priority",
+                "requirementRefs",
+                "steps",
+                "assertions",
+                "automation",
+                "traceability"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "P0",
+                    "P1",
+                    "P2"
+                  ]
+                },
+                "requirementRefs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "action",
+                      "expected",
+                      "requirementRefs"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string"
+                      },
+                      "expected": {
+                        "type": "string"
+                      },
+                      "requirementRefs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "assertions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "layer",
+                      "kind",
+                      "target",
+                      "expected",
+                      "requirementRefs"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "layer": {
+                        "type": "string",
+                        "enum": [
+                          "L1",
+                          "L2",
+                          "L3",
+                          "L4",
+                          "L5"
+                        ]
+                      },
+                      "kind": {
+                        "type": "string"
+                      },
+                      "target": {
+                        "type": "string"
+                      },
+                      "expected": {
+                        "type": "string"
+                      },
+                      "requirementRefs": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "automation": {
+                  "type": "object",
+                  "required": [
+                    "surface",
+                    "readiness",
+                    "uiContractRefs",
+                    "blockers"
+                  ],
+                  "properties": {
+                    "surface": {
+                      "type": "string",
+                      "enum": [
+                        "web",
+                        "mobile",
+                        "desktop",
+                        "api"
+                      ]
+                    },
+                    "readiness": {
+                      "type": "string",
+                      "enum": [
+                        "ready",
+                        "partial",
+                        "blocked",
+                        "manual-only"
+                      ]
+                    },
+                    "uiContractRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "blockers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "type",
+                          "message"
+                        ],
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "relatedOpenItem": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "additionalProperties": true
+                },
+                "traceability": {
+                  "type": "object",
+                  "required": [
+                    "requirementRefs",
+                    "sourceRefs"
+                  ],
+                  "properties": {
+                    "requirementRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "sourceRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
     }
   },
   "additionalProperties": true

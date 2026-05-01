@@ -72,4 +72,22 @@ describe("artifact store", () => {
       ),
     ).toThrow("FORBIDDEN_WRITE_SCOPE");
   });
+
+  test("rejects project and feature path escape segments", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+
+    expect(() =>
+      artifactPath(
+        { rootDir, project: "../outside", feature: "rule-config" },
+        "feature.yaml",
+      ),
+    ).toThrow("Feature location project");
+    expect(() =>
+      artifactPath(
+        { rootDir, project: "demo", feature: "nested/feature" },
+        "feature.yaml",
+      ),
+    ).toThrow("Feature location feature");
+  });
 });
