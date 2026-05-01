@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+bun.lockb
+projects/*/features/*/.state/
+projects/*/features/*/traces/
+projects/*/features/*/.history/
