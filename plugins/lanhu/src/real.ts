@@ -30,12 +30,17 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function isTrustedLanhuHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  const trustedDomains = ["lanhu.example", "lanhuapp.com", "lanhuapp.cn"];
+  return trustedDomains.some(
+    (domain) => normalized === domain || normalized.endsWith(`.${domain}`),
+  );
+}
+
 function assertTrustedCookieTarget(url: string): void {
   const parsed = new URL(url);
-  if (
-    parsed.protocol !== "https:" ||
-    !parsed.hostname.toLowerCase().includes("lanhu")
-  ) {
+  if (parsed.protocol !== "https:" || !isTrustedLanhuHost(parsed.hostname)) {
     throw new Error(
       "MISSING_SECRET refusing to send Lanhu cookie to untrusted host",
     );

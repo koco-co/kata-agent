@@ -91,6 +91,45 @@ describe("Lanhu real source capture", () => {
     ).rejects.toThrow(
       "MISSING_SECRET refusing to send Lanhu cookie to untrusted host",
     );
+
+    await expect(
+      fetchLanhuRequirement(
+        {
+          url: "https://notlanhu.attacker.test/prd",
+          outputDir: "sources/lanhu",
+        },
+        {
+          rootDir,
+          project: "demo",
+          feature: "rule-config",
+          cookie: "secret-cookie",
+          fetchImpl: async () => {
+            fetchCalled = true;
+            return new Response("<html></html>");
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      "MISSING_SECRET refusing to send Lanhu cookie to untrusted host",
+    );
+
+    await expect(
+      fetchLanhuRequirement(
+        { url: "https://lanhu.evil.example/prd", outputDir: "sources/lanhu" },
+        {
+          rootDir,
+          project: "demo",
+          feature: "rule-config",
+          cookie: "secret-cookie",
+          fetchImpl: async () => {
+            fetchCalled = true;
+            return new Response("<html></html>");
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      "MISSING_SECRET refusing to send Lanhu cookie to untrusted host",
+    );
     expect(fetchCalled).toBe(false);
   });
 
