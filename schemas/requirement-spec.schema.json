@@ -19,10 +19,14 @@
       "const": "0.1"
     },
     "project": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.\\.?$)(?![A-Za-z]:)[^/\\\\]+$"
     },
     "feature": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.\\.?$)(?![A-Za-z]:)[^/\\\\]+$"
     },
     "title": {
       "type": "string"
@@ -37,16 +41,109 @@
       ]
     },
     "rules": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "severity",
+          "sourceType",
+          "sourceRefs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P0",
+              "P1",
+              "P2",
+              "P3"
+            ]
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "source",
+              "confirmation",
+              "assumption",
+              "unknown"
+            ]
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confirmationQuestionId": {
+            "type": "string"
+          },
+          "assumptionRef": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
     },
     "pageContracts": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "surface"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "web",
+              "mobile",
+              "desktop",
+              "api"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
     },
     "openItems": {
       "type": "array",
       "items": {
         "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "question"
+        ],
         "properties": {
+          "id": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "P0",
+              "P1",
+              "P2",
+              "P3"
+            ]
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -55,13 +152,41 @@
               "assumed",
               "deferred"
             ]
+          },
+          "question": {
+            "type": "string"
           }
         },
         "additionalProperties": true
       }
     },
     "assumptions": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "content",
+          "risk"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
     }
   },
   "additionalProperties": true

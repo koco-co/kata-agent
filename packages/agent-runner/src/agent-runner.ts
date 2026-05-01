@@ -1,5 +1,9 @@
 import type { AgentManifest, AgentResponse } from "./agent";
 import type { ProviderRegistry } from "./provider-registry";
+import {
+  assertValidSchema,
+  type SchemaName,
+} from "../../domain/src/index";
 
 export class AgentRunner {
   constructor(private readonly providers: ProviderRegistry) {}
@@ -21,8 +25,15 @@ export class AgentRunner {
       responseFormat: { schema: agent.outputSchema },
       metadata: { agent: agent.name, outputSchema: agent.outputSchema },
     });
+    let output: unknown;
+    try {
+      output = JSON.parse(response.content) as unknown;
+    } catch {
+      throw new Error(`INVALID_MODEL_JSON ${agent.name}`);
+    }
+    assertValidSchema(agent.outputSchema as SchemaName, output);
     return {
-      output: JSON.parse(response.content) as unknown,
+      output,
       providerId: provider.id,
       usage: response.usage,
     };

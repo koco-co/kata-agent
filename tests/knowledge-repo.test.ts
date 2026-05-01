@@ -31,4 +31,21 @@ describe("knowledge repository", () => {
     const path = writeSuggestion({ rootDir, project: "demo" }, suggestion);
     expect(readSuggestion(path).content).toContain("创建时间倒序");
   });
+
+  test("rejects project path escape segments", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const suggestion: KnowledgeSuggestion = {
+      schemaVersion: "0.1",
+      category: "product-decision",
+      confidence: "high",
+      sourceArtifact: "requirement/confirmed/confirmation-result.json",
+      content: "列表默认按创建时间倒序。",
+      reason: "产品确认",
+    };
+
+    expect(() =>
+      writeSuggestion({ rootDir, project: "../outside" }, suggestion),
+    ).toThrow("Knowledge location project");
+  });
 });

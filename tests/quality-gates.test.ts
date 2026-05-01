@@ -36,6 +36,32 @@ describe("quality gates", () => {
     expect(checkRequirementClarity(gaps, confirmation).passed).toBe(false);
   });
 
+  test("blocks P0 requirement gaps answered only by assumptions", () => {
+    const gaps: RequirementGapReport = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      gaps: [
+        {
+          id: "GAP-001",
+          category: "ui-copy",
+          severity: "P0",
+          evidence: "missing",
+          impact: "blocks automation",
+          question: "保存还是确定?",
+          sourceRefs: [],
+        },
+      ],
+    };
+    const confirmation: ConfirmationResult = {
+      schemaVersion: "0.1",
+      answers: [
+        { questionId: "GAP-001", status: "assumed", answer: "保存" },
+      ],
+    };
+    expect(checkRequirementClarity(gaps, confirmation).passed).toBe(false);
+  });
+
   test("blocks ready P0 cases without assertions", () => {
     const requirement: RequirementSpec = {
       schemaVersion: "0.1",

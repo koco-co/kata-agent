@@ -25,4 +25,53 @@ describe("domain schema validator", () => {
       "must be equal to one of the allowed values",
     );
   });
+
+  test("rejects malformed RequirementSpec nested items", () => {
+    const result = validateSchema("RequirementSpec", {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "Rule Config",
+      status: "confirmed",
+      rules: ["not-a-rule"],
+      pageContracts: [],
+      openItems: [],
+      assumptions: [],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("/rules/0");
+  });
+
+  test("rejects RequirementSpec project path escapes", () => {
+    const result = validateSchema("RequirementSpec", {
+      schemaVersion: "0.1",
+      project: "../outside",
+      feature: "rule-config",
+      title: "Rule Config",
+      status: "confirmed",
+      rules: [],
+      pageContracts: [],
+      openItems: [],
+      assumptions: [],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("/project");
+  });
+
+  test("rejects malformed TestSpec nested items", () => {
+    const result = validateSchema("TestSpec", {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "Rule Config Test Spec",
+      requirementRef: "requirement/spec/requirement-spec.json",
+      status: "reviewed",
+      modules: ["not-a-module"],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("/modules/0");
+  });
 });

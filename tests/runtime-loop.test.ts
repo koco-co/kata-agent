@@ -103,11 +103,15 @@ describe("mocked test-case-gen runtime loop", () => {
       "requirement/spec/requirement-spec.json",
       "test-spec/test-spec.json",
       "test-spec/review-report.json",
+      "exports/xmind/xmind-export.json",
       "exports/xmind/test-spec.xmind",
       "reports/design-report.md",
       `traces/${started.runId}.jsonl`,
     ]) {
       expect(existsSync(join(dir, path)), path).toBe(true);
     }
+    expect(readFileSync(join(dir, "exports/xmind/test-spec.xmind"), "utf8")).toBe(
+      "mock xmind export: 1 cases\n",
+    );
   });
 });
