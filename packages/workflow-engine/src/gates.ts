@@ -23,10 +23,7 @@ export function checkRequirementClarity(
 ): GateResult {
   const answered = new Set(
     confirmation.answers
-      .filter(
-        (answer) =>
-          answer.status === "confirmed" || answer.status === "assumed",
-      )
+      .filter((answer) => answer.status === "confirmed")
       .map((answer) => answer.questionId),
   );
   const violations = gaps.gaps

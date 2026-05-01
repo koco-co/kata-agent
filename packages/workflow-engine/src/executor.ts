@@ -452,9 +452,24 @@ export class WorkflowExecutor {
                 actionContext,
               )) as XMindExport;
             writtenRefs.push(
-              writeJson("XMindExport", output.outputPath, output, [
-                "feature.exports",
-              ]),
+              writeJson(
+                "XMindExport",
+                "exports/xmind/xmind-export.json",
+                output,
+                ["feature.exports"],
+              ),
+            );
+            writtenRefs.push(
+              remember(
+                writeArtifact(
+                  context.location,
+                  "XMindMockFile",
+                  output.outputPath,
+                  `mock xmind export: ${output.caseCount} cases\n`,
+                  "workflow-executor",
+                  { allowedScopes: ["feature.exports"] },
+                ),
+              ),
             );
             break;
           }
