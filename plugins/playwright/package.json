@@ -2,5 +2,8 @@
   "name": "@kata-agent/plugin-playwright",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
 }

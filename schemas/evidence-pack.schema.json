@@ -30,7 +30,7 @@
           },
           "path": {
             "type": "string",
-            "pattern": "^automation/evidence/[A-Za-z0-9][A-Za-z0-9._-]*\\.(txt|json|png|zip)$"
+            "pattern": "^automation/evidence/(?:[A-Za-z0-9][A-Za-z0-9_-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\\.(txt|json|png|zip|log)$"
           },
           "hash": {
             "type": "string",

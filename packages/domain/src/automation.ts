@@ -18,7 +18,12 @@ export type FlowAssertionKind =
   | "state";
 export type RunMode = "mock" | "real";
 export type RunStatus = "passed" | "failed" | "blocked";
-export type CaseRunStatus = "passed" | "failed" | "skipped" | "blocked";
+export type CaseRunStatus =
+  | "passed"
+  | "failed"
+  | "error"
+  | "skipped"
+  | "blocked";
 export type EvidenceKind =
   | "screenshot"
   | "trace"
@@ -26,6 +31,27 @@ export type EvidenceKind =
   | "network"
   | "dom-snapshot"
   | "run-log";
+
+export interface PlaywrightRealOptions {
+  browserType: "chromium" | "firefox" | "webkit";
+  headless: boolean;
+  screenshotOnFailure: boolean;
+  screenshotOnPass: boolean;
+  collectConsoleLogs: boolean;
+  timeout: number;
+  retryCount: number;
+}
+
+export type RealRunStatus = "passed" | "failed" | "error" | "skipped";
+
+export interface RealStepResult {
+  stepId: string;
+  status: RealRunStatus;
+  durationMs: number;
+  screenshotPath?: string;
+  error?: string;
+  consoleLogs?: string[];
+}
 
 export interface FlowSpec {
   schemaVersion: "0.1";
@@ -105,6 +131,7 @@ export interface RunRecord {
       actual?: string;
       message?: string;
     }>;
+    stepResults?: RealStepResult[];
   }>;
   evidenceFiles: string[];
 }

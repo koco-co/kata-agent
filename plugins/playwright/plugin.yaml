@@ -10,6 +10,13 @@ actions:
     sideEffects:
       writeArtifacts: true
       external: true
+  - id: playwright.runPlan.real
+    title: Run automated plan (real browser)
+    inputSchema: RunPlan
+    outputSchema: RunRecord
+    sideEffects:
+      - network
+      - artifact-write
 permissions:
   network: restricted
   secrets: []

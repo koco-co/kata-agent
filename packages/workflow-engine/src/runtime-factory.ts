@@ -24,6 +24,7 @@ import { mockFetchRequirement } from "../../../plugins/lanhu/src/mock";
 import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
 import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
+import { executeRunPlan } from "../../../plugins/playwright/src/real";
 import { WorkflowExecutor } from "./executor";
 
 export interface RuntimeFactoryOptions {
@@ -263,8 +264,21 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("xmind.export", (input, context) =>
       exportXMindFile(input as TestSpec, featureDir(context)),
     );
-    actions.register("playwright.runPlan", () => {
-      throw new Error("PLAYWRIGHT_REAL_RUNTIME_NOT_IMPLEMENTED");
+    actions.register("playwright.runPlan", async (input, context) => {
+      const result = await executeRunPlan(
+        input as RunPlan,
+        {
+          browserType: "chromium",
+          headless: true,
+          screenshotOnFailure: true,
+          screenshotOnPass: false,
+          collectConsoleLogs: true,
+          timeout: 30000,
+          retryCount: 0,
+        },
+        featureDir(context),
+      );
+      return result.record;
     });
   }
 

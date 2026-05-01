@@ -28,7 +28,7 @@
         "required": ["testCaseId", "status", "assertionResults"],
         "properties": {
           "testCaseId": { "type": "string" },
-          "status": { "type": "string", "enum": ["passed", "failed", "skipped", "blocked"] },
+          "status": { "type": "string", "enum": ["passed", "failed", "error", "skipped", "blocked"] },
           "assertionResults": {
             "type": "array",
             "items": {
@@ -43,6 +43,28 @@
               },
               "additionalProperties": false
             }
+          },
+          "stepResults": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["stepId", "status", "durationMs"],
+              "properties": {
+                "stepId": { "type": "string" },
+                "status": { "type": "string", "enum": ["passed", "failed", "error", "skipped"] },
+                "durationMs": { "type": "number", "minimum": 0 },
+                "screenshotPath": {
+                  "type": "string",
+                  "pattern": "^automation/evidence/(?:[A-Za-z0-9][A-Za-z0-9_-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\\.(txt|json|png|zip|log)$"
+                },
+                "error": { "type": "string" },
+                "consoleLogs": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false
@@ -52,7 +74,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^automation/evidence/[A-Za-z0-9][A-Za-z0-9._-]*\\.(txt|json|png|zip)$"
+        "pattern": "^automation/evidence/(?:[A-Za-z0-9][A-Za-z0-9_-]*/)*[A-Za-z0-9][A-Za-z0-9._-]*\\.(txt|json|png|zip|log)$"
       }
     }
   },
