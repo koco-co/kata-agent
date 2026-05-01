@@ -10,6 +10,7 @@ import {
   type AgentManifest,
 } from "../packages/agent-runner/src/index";
 import { featureDir } from "../packages/artifact-repo/src/index";
+import type { LanhuFetchInput } from "../packages/domain/src/index";
 import { consultKnowledge } from "../packages/knowledge-repo/src/index";
 import { PluginActionRegistry } from "../packages/plugin-runtime/src/index";
 import {
@@ -106,7 +107,9 @@ describe("workflow executor", () => {
       }),
     );
     const actions = new PluginActionRegistry();
-    actions.register("lanhu.fetchRequirement", mockFetchRequirement);
+    actions.register("lanhu.fetchRequirement", (input) =>
+      mockFetchRequirement(input as LanhuFetchInput),
+    );
     actions.register("knowledge.consult", (input) => consultKnowledge(input as any));
 
     const executor = new WorkflowExecutor({

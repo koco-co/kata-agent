@@ -12,7 +12,12 @@ import {
 } from "../../../packages/agent-runner/src/index";
 import { writeArtifactInFeatureDir } from "../../../packages/artifact-repo/src/index";
 import { SCHEMA_VERSION } from "../../../packages/core/src/index";
-import type { RequirementDraft, RequirementSpec } from "../../../packages/domain/src/index";
+import type {
+  LanhuFetchInput,
+  RequirementDraft,
+  RequirementSpec,
+  TestSpec,
+} from "../../../packages/domain/src/index";
 import {
   consultKnowledge,
   listSuggestions,
@@ -222,8 +227,12 @@ function createRuntimeServices(): {
     }),
   );
   const actions = new PluginActionRegistry();
-  actions.register("lanhu.fetchRequirement", mockFetchRequirement);
-  actions.register("xmind.export", mockExportXMind);
+  actions.register("lanhu.fetchRequirement", (input) =>
+    mockFetchRequirement(input as LanhuFetchInput),
+  );
+  actions.register("xmind.export", (input) =>
+    mockExportXMind(input as TestSpec),
+  );
   actions.register("knowledge.consult", (input) =>
     consultKnowledge(input as RequirementDraft),
   );
