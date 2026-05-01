@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/flow-spec.schema.json",
+  "title": "FlowSpec",
+  "type": "object",
+  "required": ["schemaVersion", "project", "feature", "sourceTestSpecRef", "flows"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "sourceTestSpecRef": { "type": "string" },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "testCaseId", "priority", "surface", "entry", "steps", "assertions"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "testCaseId": { "type": "string" },
+          "priority": { "type": "string", "enum": ["P0", "P1", "P2"] },
+          "surface": { "type": "string", "enum": ["web"] },
+          "entry": {
+            "type": "object",
+            "required": ["url"],
+            "properties": { "url": { "type": "string", "minLength": 1 } },
+            "additionalProperties": false
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "action", "target", "expected", "assertionRefs"],
+              "properties": {
+                "id": { "type": "string" },
+                "action": { "type": "string", "minLength": 1 },
+                "target": { "type": "string", "minLength": 1 },
+                "expected": { "type": "string", "minLength": 1 },
+                "assertionRefs": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "layer", "kind", "target", "expected", "requirementRefs"],
+              "properties": {
+                "id": { "type": "string" },
+                "layer": { "type": "string", "enum": ["L1", "L2", "L3", "L4", "L5"] },
+                "kind": { "type": "string", "enum": ["text", "url", "visibility", "network", "state"] },
+                "target": { "type": "string", "minLength": 1 },
+                "expected": { "type": "string", "minLength": 1 },
+                "requirementRefs": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

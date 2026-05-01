@@ -31,6 +31,20 @@ export type {
 } from "./test-spec";
 export type { DesignReport, ReviewReport, XMindExport } from "./review";
 export type { KnowledgeSuggestion } from "./knowledge";
+export type {
+  AutomationPriority,
+  AutomationSurface,
+  CaseRunStatus,
+  EvidenceKind,
+  EvidencePack,
+  FlowAssertionKind,
+  FlowSpec,
+  RunMode,
+  RunPlan,
+  RunRecord,
+  RunStatus,
+  UiScriptGenInput,
+} from "./automation";
 export { SCHEMA_NAMES, SCHEMA_REGISTRY, type SchemaName } from "./schemas";
 export {
   assertValidSchema,

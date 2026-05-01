@@ -86,4 +86,116 @@ describe("domain schema validator", () => {
     expect(result.valid).toBe(false);
     expect(result.errors.join("\n")).toContain("/modules/0");
   });
+
+  test("rejects UiScriptGenInput project, feature, and testSpecPath escapes", () => {
+    expect(
+      validateSchema("UiScriptGenInput", {
+        schemaVersion: "0.1",
+        project: "../outside",
+        feature: "rule-config",
+        testSpecPath: "test-spec/test-spec.json",
+        mode: "mock",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("UiScriptGenInput", {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rules/config",
+        testSpecPath: "test-spec/test-spec.json",
+        mode: "mock",
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("UiScriptGenInput", {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rule-config",
+        testSpecPath: "../test-spec.json",
+        mode: "mock",
+      }).valid,
+    ).toBe(false);
+  });
+
+  test("rejects RunRecord project, feature, and evidence path escapes", () => {
+    const record = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      runId: "run-1",
+      runner: "playwright",
+      status: "passed",
+      startedAt: "2026-05-01T00:00:00.000Z",
+      finishedAt: "2026-05-01T00:00:01.000Z",
+      caseResults: [],
+      evidenceFiles: ["automation/evidence/run-log.txt"],
+    };
+
+    expect(
+      validateSchema("RunRecord", { ...record, project: "../outside" }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("RunRecord", { ...record, feature: "rules/config" })
+        .valid,
+    ).toBe(false);
+    expect(
+      validateSchema("RunRecord", {
+        ...record,
+        evidenceFiles: ["automation/evidence/..\\secret.txt"],
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("RunRecord", {
+        ...record,
+        evidenceFiles: ["automation/evidence/../secret.txt"],
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("RunRecord", {
+        ...record,
+        evidenceFiles: ["automation/evidence/.hidden.txt"],
+      }).valid,
+    ).toBe(false);
+  });
+
+  test("rejects EvidencePack project, feature, path escapes, and short hash", () => {
+    const evidence = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      runRecordRef: "RunRecord:test",
+      evidence: [
+        {
+          id: "EVID-001",
+          kind: "run-log",
+          path: "automation/evidence/run-log.txt",
+          hash:
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        },
+      ],
+    };
+
+    expect(
+      validateSchema("EvidencePack", { ...evidence, project: "../outside" })
+        .valid,
+    ).toBe(false);
+    expect(
+      validateSchema("EvidencePack", { ...evidence, feature: "rules/config" })
+        .valid,
+    ).toBe(false);
+    expect(
+      validateSchema("EvidencePack", {
+        ...evidence,
+        evidence: [
+          { ...evidence.evidence[0], path: "automation/evidence/..\\secret.txt" },
+        ],
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("EvidencePack", {
+        ...evidence,
+        evidence: [{ ...evidence.evidence[0], hash: "sha256:abc" }],
+      }).valid,
+    ).toBe(false);
+  });
 });

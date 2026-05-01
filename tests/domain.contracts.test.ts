@@ -112,6 +112,23 @@ describe("domain contracts", () => {
       "issue-tracker",
       "rule-source",
     ]);
+    expectEnum(
+      "FlowSpec",
+      ["properties", "flows", "items", "properties", "surface"],
+      ["web"],
+    );
+    expectEnum("RunPlan", ["properties", "runner"], ["playwright"]);
+    expectEnum("RunPlan", ["properties", "mode"], ["mock", "real"]);
+    expectEnum("RunRecord", ["properties", "status"], [
+      "passed",
+      "failed",
+      "blocked",
+    ]);
+    expectEnum(
+      "EvidencePack",
+      ["properties", "evidence", "items", "properties", "kind"],
+      ["screenshot", "trace", "console", "network", "dom-snapshot", "run-log"],
+    );
   });
 
   test("confirmation and test point types compile", () => {

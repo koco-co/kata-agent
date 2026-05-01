@@ -33,6 +33,11 @@ export const SCHEMA_REGISTRY = {
   WorkflowDefinition: "schemas/workflow-definition.schema.json",
   WorkflowRunState: "schemas/workflow-run-state.schema.json",
   TraceEvent: "schemas/trace-event.schema.json",
+  UiScriptGenInput: "schemas/ui-script-gen-input.schema.json",
+  FlowSpec: "schemas/flow-spec.schema.json",
+  RunPlan: "schemas/run-plan.schema.json",
+  RunRecord: "schemas/run-record.schema.json",
+  EvidencePack: "schemas/evidence-pack.schema.json",
 } as const;
 
 export type SchemaName = keyof typeof SCHEMA_REGISTRY;

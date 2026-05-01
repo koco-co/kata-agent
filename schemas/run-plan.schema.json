@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/run-plan.schema.json",
+  "title": "RunPlan",
+  "type": "object",
+  "required": ["schemaVersion", "project", "feature", "runner", "mode", "sourceFlowSpecRef", "scriptPath", "flows"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "runner": { "type": "string", "enum": ["playwright"] },
+    "mode": { "type": "string", "enum": ["mock", "real"] },
+    "sourceFlowSpecRef": { "type": "string" },
+    "scriptPath": {
+      "type": "string",
+      "pattern": "^automation/playwright/generated\\.spec\\.ts$"
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["flowId", "testCaseId", "title", "entryUrl", "steps", "assertions"],
+        "properties": {
+          "flowId": { "type": "string" },
+          "testCaseId": { "type": "string" },
+          "title": { "type": "string" },
+          "entryUrl": { "type": "string" },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "action", "selector", "expected"],
+              "properties": {
+                "id": { "type": "string" },
+                "action": { "type": "string" },
+                "selector": { "type": "string", "minLength": 1 },
+                "expected": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "layer", "kind", "selector", "expected"],
+              "properties": {
+                "id": { "type": "string" },
+                "layer": { "type": "string", "enum": ["L1", "L2", "L3", "L4", "L5"] },
+                "kind": { "type": "string", "enum": ["text", "url", "visibility", "network", "state"] },
+                "selector": { "type": "string", "minLength": 1 },
+                "expected": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/ui-script-gen-input.schema.json",
+  "title": "UiScriptGenInput",
+  "type": "object",
+  "required": ["schemaVersion", "project", "feature", "testSpecPath", "mode"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "testSpecPath": {
+      "type": "string",
+      "pattern": "^test-spec/test-spec\\.json$"
+    },
+    "mode": { "type": "string", "enum": ["mock", "real"] }
+  },
+  "additionalProperties": false
+}
