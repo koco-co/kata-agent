@@ -3,24 +3,11 @@
   "$id": "https://kata-agent.local/schemas/plugin-manifest.schema.json",
   "title": "PluginManifest",
   "type": "object",
-  "required": [
-    "name",
-    "title",
-    "version",
-    "type",
-    "actions",
-    "permissions"
-  ],
+  "required": ["name", "title", "version", "type", "actions", "permissions"],
   "properties": {
-    "name": {
-      "type": "string"
-    },
-    "title": {
-      "type": "string"
-    },
-    "version": {
-      "type": "string"
-    },
+    "name": { "type": "string" },
+    "title": { "type": "string" },
+    "version": { "type": "string" },
     "type": {
       "type": "string",
       "enum": [
@@ -32,12 +19,8 @@
         "rule-source"
       ]
     },
-    "actions": {
-      "type": "array"
-    },
-    "permissions": {
-      "type": "object"
-    }
+    "actions": { "type": "array" },
+    "permissions": { "type": "object" }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }
