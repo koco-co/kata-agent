@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { KnowledgeSuggestion } from "../../domain/src/index";
 
@@ -28,4 +34,13 @@ export function writeSuggestion(
 
 export function readSuggestion(path: string): KnowledgeSuggestion {
   return JSON.parse(readFileSync(path, "utf8")) as KnowledgeSuggestion;
+}
+
+export function listSuggestions(location: KnowledgeLocation): string[] {
+  const dir = join(knowledgeDir(location), "suggestions");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((entry) => entry.endsWith(".json"))
+    .map((entry) => join(dir, entry))
+    .sort();
 }

@@ -15,6 +15,7 @@ import { SCHEMA_VERSION } from "../../../packages/core/src/index";
 import type { RequirementDraft, RequirementSpec } from "../../../packages/domain/src/index";
 import {
   consultKnowledge,
+  listSuggestions,
   proposeKnowledge,
 } from "../../../packages/knowledge-repo/src/index";
 import { PluginActionRegistry } from "../../../packages/plugin-runtime/src/index";
@@ -32,11 +33,11 @@ import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 const rawArgs = Bun.argv.slice(2);
 const [group, subcommand] = rawArgs;
 const command =
-  group === "workflow" || group === "confirmation"
+  group === "workflow" || group === "confirmation" || group === "knowledge"
     ? `${group} ${subcommand ?? ""}`.trim()
     : group;
 const args =
-  group === "workflow" || group === "confirmation"
+  group === "workflow" || group === "confirmation" || group === "knowledge"
     ? rawArgs.slice(2)
     : rawArgs.slice(1);
 
@@ -282,8 +283,15 @@ function parseFeatureDir(featureDir: string): {
 
 if (!command || command === "help") {
   console.log(
-    "kata-agent commands: workflow status, workflow resume, confirmation import",
+    "kata-agent commands: test-case-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
   );
+  process.exit(0);
+}
+
+if (command === "knowledge suggestions") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  console.log(JSON.stringify(listSuggestions({ rootDir, project }), null, 2));
   process.exit(0);
 }
 
