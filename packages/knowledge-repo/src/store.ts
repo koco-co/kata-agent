@@ -14,7 +14,21 @@ export interface KnowledgeLocation {
   project: string;
 }
 
+function assertProjectSegment(project: string): void {
+  if (
+    project === "" ||
+    project === "." ||
+    project === ".." ||
+    project.includes("/") ||
+    project.includes("\\") ||
+    /^[a-z]:/i.test(project)
+  ) {
+    throw new Error("Knowledge location project must be a single path segment");
+  }
+}
+
 export function knowledgeDir(location: KnowledgeLocation): string {
+  assertProjectSegment(location.project);
   return join(location.rootDir, "projects", location.project, "knowledge");
 }
 

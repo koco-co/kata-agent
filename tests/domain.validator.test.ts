@@ -43,6 +43,23 @@ describe("domain schema validator", () => {
     expect(result.errors.join("\n")).toContain("/rules/0");
   });
 
+  test("rejects RequirementSpec project path escapes", () => {
+    const result = validateSchema("RequirementSpec", {
+      schemaVersion: "0.1",
+      project: "../outside",
+      feature: "rule-config",
+      title: "Rule Config",
+      status: "confirmed",
+      rules: [],
+      pageContracts: [],
+      openItems: [],
+      assumptions: [],
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join("\n")).toContain("/project");
+  });
+
   test("rejects malformed TestSpec nested items", () => {
     const result = validateSchema("TestSpec", {
       schemaVersion: "0.1",
