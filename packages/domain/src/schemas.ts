@@ -38,6 +38,8 @@ export const SCHEMA_REGISTRY = {
   RunPlan: "schemas/run-plan.schema.json",
   RunRecord: "schemas/run-record.schema.json",
   EvidencePack: "schemas/evidence-pack.schema.json",
+  BugReportInput: "schemas/bug-report-input.schema.json",
+  BugReport: "schemas/bug-report.schema.json",
 } as const;
 
 export type SchemaName = keyof typeof SCHEMA_REGISTRY;

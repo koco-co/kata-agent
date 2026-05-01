@@ -31,6 +31,7 @@ export type {
 } from "./test-spec";
 export type { DesignReport, ReviewReport, XMindExport } from "./review";
 export type { KnowledgeSuggestion } from "./knowledge";
+export type { BugReport, BugReportInput } from "./bug-report";
 export type {
   AutomationPriority,
   AutomationSurface,
