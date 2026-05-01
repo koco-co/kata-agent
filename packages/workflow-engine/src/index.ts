@@ -29,10 +29,12 @@ export type { GateResult, GateViolation } from "./gates";
 export {
   GATE_REGISTRY,
   checkAutomationReadiness,
+  checkAutomationScriptReadiness,
   checkEvidenceBinding,
   checkRequirementClarity,
   checkTestSpecValidity,
 } from "./gates";
+export { validateAutomationAssertions } from "./automation-policy";
 export {
   buildDesignReport,
   buildRequirementAnalysisInput,

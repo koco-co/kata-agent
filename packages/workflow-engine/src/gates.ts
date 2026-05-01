@@ -4,6 +4,7 @@ import type {
   RequirementSpec,
   TestSpec,
 } from "../../domain/src/index";
+import { validateAutomationAssertions } from "./automation-policy";
 
 export interface GateViolation {
   id: string;
@@ -175,6 +176,13 @@ export function checkAutomationReadiness(
   return { passed: violations.length === 0, violations };
 }
 
+export function checkAutomationScriptReadiness(spec: TestSpec): GateResult {
+  return {
+    gateId: "automation-script-readiness",
+    ...validateAutomationAssertions(spec),
+  };
+}
+
 export const GATE_REGISTRY = {
   "requirement-test-readiness": {
     id: "requirement-test-readiness",
@@ -184,5 +192,9 @@ export const GATE_REGISTRY = {
       checkTestSpecValidity,
       checkAutomationReadiness,
     ],
+  },
+  "automation-script-readiness": {
+    id: "automation-script-readiness",
+    checks: [checkAutomationScriptReadiness],
   },
 } as const;
