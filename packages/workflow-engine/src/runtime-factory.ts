@@ -1,0 +1,277 @@
+import {
+  AgentRunner,
+  MockProvider,
+  OpenAICompatibleProvider,
+  ProviderRegistry,
+  type AgentManifest,
+} from "../../agent-runner/src/index";
+import { featureDir } from "../../artifact-repo/src/index";
+import { LocalConfigLoader } from "../../core/src/index";
+import type {
+  LanhuFetchInput,
+  RequirementDraft,
+  RequirementSpec,
+  TestSpec,
+} from "../../domain/src/index";
+import {
+  consultKnowledge,
+  proposeKnowledge,
+} from "../../knowledge-repo/src/index";
+import { PluginActionRegistry } from "../../plugin-runtime/src/index";
+import { fetchLanhuRequirement } from "../../../plugins/lanhu/src/real";
+import { mockFetchRequirement } from "../../../plugins/lanhu/src/mock";
+import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
+import { mockExportXMind } from "../../../plugins/xmind/src/mock";
+import { WorkflowExecutor } from "./executor";
+
+export interface RuntimeFactoryOptions {
+  rootDir: string;
+  mode: "mock" | "real";
+}
+
+function agent(
+  name: string,
+  inputSchema: string,
+  outputSchema: string,
+): AgentManifest {
+  return {
+    name,
+    title: name,
+    version: "0.1.0",
+    inputSchema,
+    outputSchema,
+    ownerSkill: "test-case-gen",
+    promptPath: "prompt.md",
+  };
+}
+
+function createMockAgentResponses(): Record<string, string> {
+  return {
+    "source-normalizer": JSON.stringify({
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "规则配置",
+      facts: [
+        {
+          id: "FACT-001",
+          content: "用户需要创建规则。",
+          sourceRefs: ["SRC-001"],
+        },
+      ],
+    }),
+    "requirement-analyst": JSON.stringify({
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      gaps: [
+        {
+          id: "GAP-001",
+          category: "ui-copy",
+          severity: "P0",
+          evidence: "缺少保存按钮文案",
+          impact: "影响测试断言",
+          question: "保存按钮文案是什么?",
+          sourceRefs: ["SRC-001"],
+        },
+      ],
+    }),
+    "clarification-drafter": JSON.stringify({
+      schemaVersion: "0.1",
+      summary: "需要确认保存按钮文案。",
+      questions: [
+        {
+          id: "GAP-001",
+          severity: "P0",
+          category: "ui-copy",
+          question: "保存按钮文案是什么?",
+          impact: "影响测试断言",
+          requiresProductAnswer: true,
+        },
+      ],
+      assumptions: [],
+    }),
+    "requirement-author": JSON.stringify({
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "规则配置",
+      status: "confirmed",
+      rules: [
+        {
+          id: "REQ-001",
+          text: "保存按钮文案为保存，保存成功后展示成功提示。",
+          severity: "P0",
+          sourceType: "confirmation",
+          sourceRefs: ["SRC-001"],
+          confirmationQuestionId: "GAP-001",
+        },
+      ],
+      pageContracts: [
+        { id: "PAGE-001", name: "规则配置", surface: "web" },
+      ],
+      openItems: [],
+      assumptions: [],
+    }),
+    "test-point-designer": JSON.stringify({
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      points: [
+        {
+          id: "TP-001",
+          title: "创建规则成功提示",
+          priority: "P0",
+          requirementRefs: ["REQ-001"],
+          risk: "high",
+        },
+      ],
+    }),
+    "test-spec-author": JSON.stringify({
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "规则配置测试规格",
+      requirementRef: "requirement/spec/requirement-spec.json",
+      status: "reviewed",
+      modules: [
+        {
+          id: "M-001",
+          name: "规则创建",
+          requirementRefs: ["REQ-001"],
+          cases: [
+            {
+              id: "TC-001",
+              title: "创建规则后展示成功提示",
+              priority: "P0",
+              requirementRefs: ["REQ-001"],
+              steps: [
+                {
+                  id: "STEP-001",
+                  action: "点击保存按钮",
+                  expected: "保存成功",
+                  requirementRefs: ["REQ-001"],
+                },
+              ],
+              assertions: [
+                {
+                  id: "ASSERT-001",
+                  layer: "L3",
+                  kind: "ui-copy",
+                  target: "成功提示",
+                  expected: "保存成功",
+                  requirementRefs: ["REQ-001"],
+                },
+              ],
+              automation: {
+                surface: "web",
+                readiness: "ready",
+                uiContractRefs: ["PAGE-001"],
+                blockers: [],
+              },
+              traceability: {
+                requirementRefs: ["REQ-001"],
+                sourceRefs: ["SRC-001"],
+              },
+            },
+          ],
+        },
+      ],
+    }),
+    "test-spec-reviewer": JSON.stringify({
+      schemaVersion: "0.1",
+      passed: true,
+      violations: [],
+    }),
+  };
+}
+
+function createAgentManifestMap(): Map<string, AgentManifest> {
+  return new Map([
+    [
+      "source-normalizer",
+      agent("source-normalizer", "RequirementSourceBundle", "RequirementDraft"),
+    ],
+    [
+      "requirement-analyst",
+      agent("requirement-analyst", "RequirementAnalysisInput", "RequirementGapReport"),
+    ],
+    [
+      "clarification-drafter",
+      agent("clarification-drafter", "RequirementGapReport", "ClarificationDossier"),
+    ],
+    [
+      "requirement-author",
+      agent("requirement-author", "RequirementAuthorInput", "RequirementSpec"),
+    ],
+    [
+      "test-point-designer",
+      agent("test-point-designer", "RequirementSpec", "TestPointSet"),
+    ],
+    [
+      "test-spec-author",
+      agent("test-spec-author", "TestSpecAuthorInput", "TestSpec"),
+    ],
+    [
+      "test-spec-reviewer",
+      agent("test-spec-reviewer", "TestSpecReviewerInput", "ReviewReport"),
+    ],
+  ]);
+}
+
+export function createRuntimeServices(options: RuntimeFactoryOptions): {
+  executor: WorkflowExecutor;
+} {
+  const providers = new ProviderRegistry();
+  const actions = new PluginActionRegistry();
+
+  if (options.mode === "mock") {
+    providers.register(new MockProvider(createMockAgentResponses()));
+    actions.register("lanhu.fetchRequirement", (input) =>
+      mockFetchRequirement(input as LanhuFetchInput),
+    );
+    actions.register("xmind.export", (input) =>
+      mockExportXMind(input as TestSpec),
+    );
+  } else {
+    const config = new LocalConfigLoader({ rootDir: options.rootDir });
+    const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
+    const apiKey = config.resolveSecret("KATA_AGENT_PROVIDER_API_KEY");
+    const model = config.resolveSecret("KATA_AGENT_PROVIDER_MODEL");
+    if (!baseUrl || !apiKey || !model) {
+      throw new Error("MISSING_SECRET provider config");
+    }
+    providers.register(
+      new OpenAICompatibleProvider({
+        id: "openai-compatible",
+        baseUrl,
+        apiKey,
+        model,
+      }),
+    );
+    actions.register("lanhu.fetchRequirement", (input, context) =>
+      fetchLanhuRequirement(input as LanhuFetchInput, {
+        ...context,
+        cookie: config.resolveSecret("LANHU_COOKIE"),
+      }),
+    );
+    actions.register("xmind.export", (input, context) =>
+      exportXMindFile(input as TestSpec, featureDir(context)),
+    );
+  }
+
+  actions.register("knowledge.consult", (input) =>
+    consultKnowledge(input as RequirementDraft),
+  );
+  actions.register("knowledge.propose", (input, context) =>
+    proposeKnowledge(input as RequirementSpec, context.rootDir),
+  );
+
+  return {
+    executor: new WorkflowExecutor({
+      agentRunner: new AgentRunner(providers),
+      actions,
+      agents: createAgentManifestMap(),
+    }),
+  };
+}

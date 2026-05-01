@@ -47,3 +47,7 @@ export type {
   WorkflowExecutorServices,
 } from "./executor";
 export { WorkflowExecutor } from "./executor";
+export {
+  createRuntimeServices,
+  type RuntimeFactoryOptions,
+} from "./runtime-factory";
