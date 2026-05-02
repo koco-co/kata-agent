@@ -1,9 +1,33 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, mock } from "bun:test";
 import { ConversationAgent } from "../../packages/conversation-agent/src/agent";
 import { buildSystemPrompt } from "../../packages/conversation-agent/src/prompts";
 import type { ConversationTool, ToolsetName } from "../../packages/conversation-agent/src/types";
 import { ALL_TOOLSETS } from "../../packages/conversation-agent/src/types";
 import { randomUUID } from "crypto";
+
+// ---------------------------------------------------------------------------
+// Mock the provider so tests don't hit the real API
+// ---------------------------------------------------------------------------
+
+const mockCallProvider = mock(async () => ({
+  content: "Mock response from provider",
+  inputTokens: 10,
+  outputTokens: 5,
+  finishReason: "stop" as const,
+  toolCalls: undefined,
+}));
+
+mock.module("../../packages/conversation-agent/src/provider", () => ({
+  callProvider: mockCallProvider,
+  defaultProviderConfig: () => ({
+    model: "test-model",
+    baseUrl: "http://localhost:9999",
+    apiKey: "test-key",
+    temperature: 0.7,
+    maxTokens: 8192,
+    contextLength: 1024,
+  }),
+}));
 
 // ---------------------------------------------------------------------------
 // Helpers

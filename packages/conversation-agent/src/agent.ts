@@ -1,16 +1,17 @@
 // ---------------------------------------------------------------------------
 // @kata-agent/conversation-agent — ConversationAgent: main loop, slash
-// command handling, and message processing.
+// command handling, and message processing with real model provider.
 // ---------------------------------------------------------------------------
 
 import { randomUUID } from "crypto";
-import type { ChatMessage, ConversationTool, ToolsetName } from "./types";
+import type { ChatMessage, ConversationTool, ToolsetName, ToolCallMessage, ToolResultMessage } from "./types";
 import { ALL_TOOLSETS } from "./types";
 import { ToolRuntime } from "./tool-runtime";
 import { SessionStore } from "./session-store";
 import { IntentBias } from "./intent";
 import { SecretRedactor } from "./secret-redactor";
 import { buildSystemPrompt } from "./prompts";
+import { callProvider, defaultProviderConfig, type ProviderConfig } from "./provider";
 
 // ---------------------------------------------------------------------------
 // AgentConfig
@@ -56,6 +57,33 @@ export class ConversationAgent {
     this.sessionId = randomUUID();
     this.yolo = false;
     this.enabledToolsets = [...ALL_TOOLSETS];
+  }
+
+  // ---- Private helpers ---------------------------------------------------
+
+  private getProviderConfig(): ProviderConfig {
+    const cfg = defaultProviderConfig();
+    return {
+      model: this.config.model || cfg.model,
+      baseUrl: this.config.apiBase || cfg.baseUrl,
+      apiKey: this.config.apiKey || cfg.apiKey,
+      temperature: 0.7,
+      maxTokens: 8192,
+      contextLength: cfg.contextLength,
+    };
+  }
+
+  private buildToolSchema(): Array<Record<string, unknown>> {
+    return this.runtime.listTools()
+      .filter(t => this.enabledToolsets.includes(t.toolset))
+      .map(t => ({
+        type: "function",
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.inputSchema,
+        },
+      }));
   }
 
   // ---- Tool Registration -------------------------------------------------
@@ -152,9 +180,9 @@ export class ConversationAgent {
    * 2. Store the user message
    * 3. Analyze intent
    * 4. Build system prompt with intent context
-   * 5. Return a placeholder response
-   *
-   * @returns The chat messages (including user + assistant) and the final text response.
+   * 5. Call the model provider with tools
+   * 6. Execute returned tool calls (loop up to maxIterations)
+   * 7. Return the final response
    */
   async processUserMessage(
     userMessage: string,
@@ -189,24 +217,96 @@ export class ConversationAgent {
       intentContext,
     );
 
-    // 5. Placeholder response (real model integration will come later)
-    const placeholderResponse = `I received your message and will process it using the available tools.\n\n${redactedMessage.length > 50 ? `(Your message was ${redactedMessage.length} characters long.)` : `Your message: "${redactedMessage}"`}\n\nSystem prompt built (${systemPrompt.length} chars). Intent context: ${intentContext ?? "none"}`;
+    // 5-6. Call provider and loop for tool calls
+    const providerConfig = this.getProviderConfig();
+    const toolSchema = this.buildToolSchema();
+    const maxIter = this.config.maxIterations ?? 10;
 
-    // 6. Store assistant response
-    const assistantMsg: ChatMessage = {
+    let finalResponse = "";
+
+    for (let iteration = 0; iteration < maxIter; iteration++) {
+      // Read messages from session store
+      const messages = await this.store.readMessages(this.sessionId);
+
+      // Call provider
+      const providerResult = await callProvider(
+        providerConfig,
+        systemPrompt,
+        messages,
+        toolSchema.length > 0 ? toolSchema : undefined,
+      );
+
+      // Parse response for tool calls
+      const toolCalls = providerResult.toolCalls;
+
+      if (!toolCalls || toolCalls.length === 0) {
+        // No tool calls — this is the final response
+        finalResponse = providerResult.content;
+
+        const finalMsg: ChatMessage = {
+          role: "assistant",
+          content: finalResponse,
+          isFinal: true,
+          toolCalls: [],
+        };
+        await this.store.appendMessage(this.sessionId, finalMsg);
+
+        return {
+          messages: await this.store.readMessages(this.sessionId),
+          finalResponse,
+        };
+      }
+
+      // Store assistant message with tool calls
+      const assistantMsg: ChatMessage = {
+        role: "assistant",
+        content: providerResult.content,
+        toolCalls: toolCalls.map(tc => ({
+          id: tc.id,
+          name: tc.name,
+          args: tc.args,
+        })),
+      };
+      await this.store.appendMessage(this.sessionId, assistantMsg);
+
+      // Execute each tool call
+      const context = {
+        workspaceRoot: this.config.workspaceRoot,
+        sessionId: this.sessionId,
+        yolo: this.yolo,
+        env: {},
+      };
+
+      for (const tc of toolCalls) {
+        const toolResult = await this.runtime.execute(tc.name, tc.args, context);
+
+        // Redact secrets in tool results
+        const redactedSummary = this.redactor.redact(toolResult.summary);
+
+        const resultMsg: ChatMessage = {
+          role: "tool",
+          toolCallId: tc.id,
+          content: redactedSummary,
+          result: toolResult,
+        };
+        await this.store.appendMessage(this.sessionId, resultMsg);
+      }
+    }
+
+    // Max iterations reached without final response
+    finalResponse = `I've reached the maximum number of iterations (${maxIter}) processing your request. Some operations may not have completed. Please try breaking your request into smaller steps.`;
+
+    const finalMsg: ChatMessage = {
       role: "assistant",
-      content: placeholderResponse,
+      content: finalResponse,
       isFinal: true,
       toolCalls: [],
     };
-    await this.store.appendMessage(this.sessionId, assistantMsg);
-
-    // 7. Return both the messages array and the final text
-    const messages = await this.store.readMessages(this.sessionId);
+    await this.store.appendMessage(this.sessionId, finalMsg);
 
     return {
-      messages,
-      finalResponse: placeholderResponse,
+      messages: await this.store.readMessages(this.sessionId),
+      finalResponse,
     };
   }
 }

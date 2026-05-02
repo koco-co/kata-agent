@@ -24,6 +24,7 @@ export interface ChatOptions {
   model?: string;
   provider?: string;
   apiKey?: string;
+  apiBase?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,10 +58,18 @@ export function startChat(options: ChatOptions = {}): void {
   const workspaceRoot = options.workspaceRoot ?? process.cwd();
   const sessionDir = resolve(homedir(), ".kata-agent", "sessions");
   const approvalDir = resolve(homedir(), ".kata-agent", "approvals");
-  const model = options.model ?? "deepseek-v4-flash";
-  const provider = options.provider ?? "deepseek";
+  const model = options.model ?? process.env.KATA_AGENT_MODEL ?? "deepseek-v4-flash";
+  const provider = options.provider ?? process.env.KATA_AGENT_PROVIDER ?? "deepseek";
   const apiKey =
-    options.apiKey ?? process.env.KATA_AGENT_API_KEY ?? "test-key";
+    options.apiKey ??
+    process.env.KATA_AGENT_API_KEY ??
+    process.env.DEEPSEEK_API_KEY ??
+    "";
+  const apiBase =
+    options.apiBase ??
+    process.env.KATA_AGENT_BASE_URL ??
+    process.env.DEEPSEEK_BASE_URL ??
+    "https://api.deepseek.com";
 
   // Ensure directories exist
   ensureDir(sessionDir);
@@ -73,6 +82,7 @@ export function startChat(options: ChatOptions = {}): void {
     model,
     provider,
     apiKey,
+    apiBase,
   });
 
   // ---- Register all tools ----

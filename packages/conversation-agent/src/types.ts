@@ -62,8 +62,9 @@ export interface ToolCallMessage {
   role: "assistant";
   content: string;
   toolCalls: Array<{
+    id: string;
     name: string;
-    arguments: Record<string, unknown>;
+    args: Record<string, unknown>;
   }>;
   isFinal?: false;
 }
@@ -73,6 +74,7 @@ export interface ToolResultMessage {
   role: "tool";
   toolCallId: string;
   content: string;
+  result?: ToolResult;
 }
 
 /** A final assistant message (response is complete). */
