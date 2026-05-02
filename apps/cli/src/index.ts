@@ -4,9 +4,15 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import YAML from "yaml";
-import { writeArtifactInFeatureDir } from "../../../packages/artifact-repo/src/index";
+import {
+  readArtifactIndex,
+  readJsonArtifact,
+  writeArtifactInFeatureDir,
+  writeJsonArtifact,
+} from "../../../packages/artifact-repo/src/index";
 import {
   assertValidSchema,
+  type BugReport,
   type ConfirmationResult,
   type PlaywrightRealOptions,
   type UiScriptGenInput,
@@ -14,7 +20,9 @@ import {
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
 import {
   appendTrace,
+  buildIssueDraftsFromBugReport,
   createRuntimeServices,
+  issueDraftPath,
   loadWorkflowState,
   markSucceeded,
   saveWorkflowState,
@@ -25,11 +33,19 @@ import {
 const rawArgs = Bun.argv.slice(2);
 const [group, subcommand] = rawArgs;
 const command =
-  group === "workflow" || group === "confirmation" || group === "knowledge"
+  group === "workflow" ||
+  group === "confirmation" ||
+  group === "knowledge" ||
+  group === "issue" ||
+  group === "lanhu"
     ? `${group} ${subcommand ?? ""}`.trim()
     : group;
 const args =
-  group === "workflow" || group === "confirmation" || group === "knowledge"
+  group === "workflow" ||
+  group === "confirmation" ||
+  group === "knowledge" ||
+  group === "issue" ||
+  group === "lanhu"
     ? rawArgs.slice(2)
     : rawArgs.slice(1);
 
@@ -111,6 +127,36 @@ if (command === "knowledge suggestions") {
   const rootDir = requireArg("--root");
   const project = requireArg("--project");
   console.log(JSON.stringify(listSuggestions({ rootDir, project }), null, 2));
+  process.exit(0);
+}
+
+if (command === "issue draft") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const bugReportPath = requireArg("--bug-report");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const bugReportRef = index.artifacts.find(
+    (item) => item.type === "BugReport" && item.path === bugReportPath,
+  );
+  if (!bugReportRef) {
+    console.error(`Missing BugReport artifact: ${bugReportPath}`);
+    process.exit(1);
+  }
+  const bugReport = readJsonArtifact<BugReport>(
+    location,
+    bugReportRef,
+    "BugReport",
+  );
+  const drafts = buildIssueDraftsFromBugReport(bugReportRef, bugReport);
+  const paths: string[] = [];
+  for (const draft of drafts) {
+    const path = issueDraftPath(draft);
+    writeJsonArtifact(location, "IssueDraft", path, draft, "issue draft", {
+      allowedScopes: ["feature.reports"],
+    });
+    paths.push(path);
+  }
+  console.log(JSON.stringify({ count: paths.length, paths }, null, 2));
   process.exit(0);
 }
 

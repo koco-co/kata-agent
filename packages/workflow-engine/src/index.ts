@@ -45,6 +45,9 @@ export {
   buildRunPlanFromFlowSpec,
   buildTestSpecAuthorInput,
   buildTestSpecReviewerInput,
+  buildIssueDraftsFromBugReport,
+  buildLanhuWritebackDraft,
+  issueDraftPath,
   renderAutomationReportMarkdown,
   renderConfirmationDraft,
 } from "./artifact-builders";

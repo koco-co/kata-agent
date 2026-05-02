@@ -332,3 +332,9 @@ export function buildDesignReport(
     })),
   };
 }
+
+export {
+  buildIssueDraftsFromBugReport,
+  buildLanhuWritebackDraft,
+  issueDraftPath,
+} from "./collaboration-builders";
