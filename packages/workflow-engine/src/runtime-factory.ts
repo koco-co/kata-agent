@@ -8,6 +8,7 @@ import {
 import { featureDir } from "../../artifact-repo/src/index";
 import { LocalConfigLoader } from "../../core/src/index";
 import type {
+  IssueDraft,
   LanhuFetchInput,
   NotificationRequest,
   PlaywrightRealOptions,
@@ -33,6 +34,8 @@ import { sendDingTalkNotification } from "../../../plugins/notify/src/dingtalk";
 import { sendNotification } from "../../../plugins/notify/src/mock";
 import { generateAllureReport } from "../../../plugins/report/src/allure";
 import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
+import { mockSyncIssueToZentao } from "../../../plugins/zentao/src/mock";
+import { syncIssueToZentao } from "../../../plugins/zentao/src/real";
 import { WorkflowExecutor } from "./executor";
 
 export interface RuntimeFactoryOptions {
@@ -286,6 +289,11 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       generateAllureReport(input as RunRecord, featureDir(context)),
     );
     registerNotifyAction();
+    actions.register("zentao.syncIssue", (input) =>
+      mockSyncIssueToZentao(input as IssueDraft, {
+        dryRun: true,
+      }),
+    );
   } else {
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
     const apiKey = config.resolveSecret("KATA_AGENT_PROVIDER_API_KEY");
@@ -337,6 +345,13 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       generateAllureReport(input as RunRecord, featureDir(context)),
     );
     registerNotifyAction();
+    actions.register("zentao.syncIssue", (input) =>
+      syncIssueToZentao(input as IssueDraft, {
+        baseUrl: config.resolveSecret("ZENTAO_BASE_URL"),
+        token: config.resolveSecret("ZENTAO_TOKEN"),
+        dryRun: false,
+      }),
+    );
   }
 
   actions.register("knowledge.consult", (input) =>

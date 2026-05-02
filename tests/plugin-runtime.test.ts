@@ -76,4 +76,27 @@ describe("plugin runtime", () => {
       "artifact-export action outputSchema is not allowed",
     );
   });
+
+  test("allows issue tracker plugins to output IssueSyncResult", () => {
+    const manifest: PluginManifest = {
+      name: "zentao",
+      title: "Zentao",
+      version: "0.4.0",
+      type: "issue-tracker",
+      actions: [
+        {
+          id: "zentao.syncIssue",
+          title: "Sync IssueDraft to Zentao",
+          inputSchema: "IssueDraft",
+          outputSchema: "IssueSyncResult",
+        },
+      ],
+      permissions: {
+        network: "restricted",
+        secrets: ["ZENTAO_BASE_URL", "ZENTAO_TOKEN"],
+        writeScopes: [],
+      },
+    };
+    expect(() => validatePluginManifest(manifest)).not.toThrow();
+  });
 });

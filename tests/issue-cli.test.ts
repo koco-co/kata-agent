@@ -79,4 +79,50 @@ describe("issue CLI", () => {
     ) as { confirmedForSync: boolean };
     expect(draft.confirmedForSync).toBe(false);
   });
+
+  test("issue sync rejects unconfirmed draft in real non-dry-run mode", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-issue-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    createFeatureWorkspace(location);
+    writeJsonArtifact(
+      location,
+      "IssueDraft",
+      "reports/issues/BUG-001.issue-draft.json",
+      {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rule-config",
+        sourceBugReportRef: "BugReport:abc",
+        sourceBugId: "BUG-001",
+        title: "保存失败",
+        severity: "P0",
+        descriptionMarkdown: "failure",
+        reproductionSteps: ["click save"],
+        evidenceRefs: [],
+        labels: [],
+        confirmedForSync: false,
+      },
+      "test",
+      { allowedScopes: ["feature.reports"] },
+    );
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "apps/cli/src/index.ts",
+        "issue",
+        "sync",
+        "--mode",
+        "real",
+        "--feature-dir",
+        featureDir(location),
+        "--issue-draft",
+        "reports/issues/BUG-001.issue-draft.json",
+      ],
+      { cwd: repoRoot, stderr: "pipe" },
+    );
+    const error = await new Response(proc.stderr).text();
+    expect(await proc.exited).toBe(1);
+    expect(error).toContain("INVALID_INPUT IssueDraft must be confirmedForSync");
+  });
 });

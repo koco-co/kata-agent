@@ -54,6 +54,10 @@
       "name": "@kata-agent/plugin-lanhu",
       "version": "0.1.0",
     },
+    "plugins/notify": {
+      "name": "@kata-agent/plugin-notify",
+      "version": "0.1.0",
+    },
     "plugins/playwright": {
       "name": "@kata-agent/plugin-playwright",
       "version": "0.1.0",
@@ -61,9 +65,17 @@
         "playwright": "^1.52.0",
       },
     },
+    "plugins/report": {
+      "name": "@kata-agent/plugin-report",
+      "version": "0.1.0",
+    },
     "plugins/xmind": {
       "name": "@kata-agent/plugin-xmind",
       "version": "0.1.0",
+    },
+    "plugins/zentao": {
+      "name": "@kata-agent/plugin-zentao",
+      "version": "0.4.0",
     },
   },
   "packages": {
@@ -81,11 +93,17 @@
 
     "@kata-agent/plugin-lanhu": ["@kata-agent/plugin-lanhu@workspace:plugins/lanhu"],
 
+    "@kata-agent/plugin-notify": ["@kata-agent/plugin-notify@workspace:plugins/notify"],
+
     "@kata-agent/plugin-playwright": ["@kata-agent/plugin-playwright@workspace:plugins/playwright"],
+
+    "@kata-agent/plugin-report": ["@kata-agent/plugin-report@workspace:plugins/report"],
 
     "@kata-agent/plugin-runtime": ["@kata-agent/plugin-runtime@workspace:packages/plugin-runtime"],
 
     "@kata-agent/plugin-xmind": ["@kata-agent/plugin-xmind@workspace:plugins/xmind"],
+
+    "@kata-agent/plugin-zentao": ["@kata-agent/plugin-zentao@workspace:plugins/zentao"],
 
     "@kata-agent/skill-runner": ["@kata-agent/skill-runner@workspace:packages/skill-runner"],
 

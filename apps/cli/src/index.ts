@@ -10,10 +10,12 @@ import {
   writeArtifactInFeatureDir,
   writeJsonArtifact,
 } from "../../../packages/artifact-repo/src/index";
+import { LocalConfigLoader } from "../../../packages/core/src/index";
 import {
   assertValidSchema,
   type BugReport,
   type ConfirmationResult,
+  type IssueDraft,
   type PlaywrightRealOptions,
   type UiScriptGenInput,
 } from "../../../packages/domain/src/index";
@@ -29,6 +31,8 @@ import {
   type RuntimeFactoryOptions,
   type WorkflowDefinition,
 } from "../../../packages/workflow-engine/src/index";
+import { mockSyncIssueToZentao } from "../../../plugins/zentao/src/mock";
+import { syncIssueToZentao } from "../../../plugins/zentao/src/real";
 
 const rawArgs = Bun.argv.slice(2);
 const [group, subcommand] = rawArgs;
@@ -61,6 +65,10 @@ function requireArg(name: string): string {
     process.exit(1);
   }
   return value;
+}
+
+function booleanFlag(name: string): boolean {
+  return args.includes(name);
 }
 
 function runtimeMode(): RuntimeFactoryOptions["mode"] {
@@ -158,6 +166,54 @@ if (command === "issue draft") {
   }
   console.log(JSON.stringify({ count: paths.length, paths }, null, 2));
   process.exit(0);
+}
+
+if (command === "issue sync") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const draftPath = requireArg("--issue-draft");
+  const dryRun = booleanFlag("--dry-run");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const draftRef = index.artifacts.find(
+    (item) => item.type === "IssueDraft" && item.path === draftPath,
+  );
+  if (!draftRef) {
+    console.error(`Missing IssueDraft artifact: ${draftPath}`);
+    process.exit(1);
+  }
+  const draft = {
+    ...readJsonArtifact<IssueDraft>(location, draftRef, "IssueDraft"),
+    sourceIssueDraftRef: draftRef.id,
+  };
+  try {
+    const config = new LocalConfigLoader({ rootDir: location.rootDir });
+    const result =
+      runtimeMode() === "real"
+        ? await syncIssueToZentao(draft, {
+            baseUrl: config.resolveSecret("ZENTAO_BASE_URL"),
+            token: config.resolveSecret("ZENTAO_TOKEN"),
+            dryRun,
+          })
+        : await mockSyncIssueToZentao(draft, {
+            dryRun: true,
+          });
+    const resultPath = `reports/issues/${draft.sourceBugId}.issue-sync-result.json`;
+    writeJsonArtifact(
+      location,
+      "IssueSyncResult",
+      resultPath,
+      result,
+      "issue sync",
+      {
+        allowedScopes: ["feature.reports"],
+      },
+    );
+    console.log(JSON.stringify({ path: resultPath, result }, null, 2));
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 if (command === "test-case-gen") {
