@@ -8,6 +8,7 @@ import { writeArtifactInFeatureDir } from "../../../packages/artifact-repo/src/i
 import {
   assertValidSchema,
   type ConfirmationResult,
+  type PlaywrightRealOptions,
   type UiScriptGenInput,
 } from "../../../packages/domain/src/index";
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
@@ -55,6 +56,17 @@ function runtimeMode(): RuntimeFactoryOptions["mode"] {
   return mode;
 }
 
+function browserType(): PlaywrightRealOptions["browserType"] {
+  const browser = argValue("--browser") ?? "chromium";
+  if (browser !== "chromium" && browser !== "firefox" && browser !== "webkit") {
+    console.error(
+      `Invalid --browser: ${browser}. Expected "chromium", "firefox", or "webkit".`,
+    );
+    process.exit(1);
+  }
+  return browser;
+}
+
 function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
   if (!/^[a-z0-9-]+$/.test(name)) {
     throw new Error(`Invalid workflow name: ${name}`);
@@ -97,7 +109,11 @@ if (command === "test-case-gen") {
   const feature = requireArg("--feature");
   const sourceUrl = requireArg("--source-url");
   const runId = argValue("--run") ?? randomUUID();
-  const { executor } = createRuntimeServices({ rootDir, mode: runtimeMode() });
+  const { executor } = createRuntimeServices({
+    rootDir,
+    mode: runtimeMode(),
+    browserType: browserType(),
+  });
   const result = await executor.start({
     location: { rootDir, project, feature },
     definition: loadWorkflowDefinition(),
@@ -121,6 +137,7 @@ if (command === "ui-script-gen") {
   const testSpecPath = requireArg("--test-spec");
   const runId = argValue("--run") ?? randomUUID();
   const mode = runtimeMode();
+  const browser = browserType();
   const input: UiScriptGenInput = {
     schemaVersion: "0.1",
     project,
@@ -134,7 +151,12 @@ if (command === "ui-script-gen") {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
-  const { executor } = createRuntimeServices({ rootDir, mode });
+  const { executor } = createRuntimeServices({
+    rootDir,
+    mode,
+    browserType: browser,
+    requireProviderConfig: false,
+  });
   const result = await executor.start({
     location: { rootDir, project, feature },
     definition: loadWorkflowDefinition("ui-script-gen"),
@@ -178,6 +200,8 @@ if (command === "workflow resume") {
   const { executor } = createRuntimeServices({
     rootDir: location.rootDir,
     mode: runtimeMode(),
+    browserType: browserType(),
+    requireProviderConfig: state.workflowId !== "ui-script-gen",
   });
   const result = await executor.resume({
     location,

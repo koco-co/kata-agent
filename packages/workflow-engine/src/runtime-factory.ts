@@ -9,6 +9,7 @@ import { featureDir } from "../../artifact-repo/src/index";
 import { LocalConfigLoader } from "../../core/src/index";
 import type {
   LanhuFetchInput,
+  PlaywrightRealOptions,
   RequirementDraft,
   RequirementSpec,
   RunRecord,
@@ -26,6 +27,7 @@ import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
 import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
 import { executeRunPlan } from "../../../plugins/playwright/src/real";
+import { selfHealingRun } from "../../../plugins/playwright/src/self-heal";
 import { generateAllureReport } from "../../../plugins/report/src/allure";
 import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
 import { WorkflowExecutor } from "./executor";
@@ -33,6 +35,8 @@ import { WorkflowExecutor } from "./executor";
 export interface RuntimeFactoryOptions {
   rootDir: string;
   mode: "mock" | "real";
+  browserType?: PlaywrightRealOptions["browserType"];
+  requireProviderConfig?: boolean;
 }
 
 function agent(
@@ -230,6 +234,7 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
 } {
   const providers = new ProviderRegistry();
   const actions = new PluginActionRegistry();
+  const browserType = options.browserType ?? "chromium";
 
   if (options.mode === "mock") {
     providers.register(new MockProvider(createMockAgentResponses()));
@@ -253,17 +258,19 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
     const apiKey = config.resolveSecret("KATA_AGENT_PROVIDER_API_KEY");
     const model = config.resolveSecret("KATA_AGENT_PROVIDER_MODEL");
-    if (!baseUrl || !apiKey || !model) {
+    const requireProviderConfig = options.requireProviderConfig ?? true;
+    if (baseUrl && apiKey && model) {
+      providers.register(
+        new OpenAICompatibleProvider({
+          id: "openai-compatible",
+          baseUrl,
+          apiKey,
+          model,
+        }),
+      );
+    } else if (requireProviderConfig) {
       throw new Error("MISSING_SECRET provider config");
     }
-    providers.register(
-      new OpenAICompatibleProvider({
-        id: "openai-compatible",
-        baseUrl,
-        apiKey,
-        model,
-      }),
-    );
     actions.register("lanhu.fetchRequirement", (input, context) =>
       fetchLanhuRequirement(input as LanhuFetchInput, {
         ...context,
@@ -274,18 +281,21 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       exportXMindFile(input as TestSpec, featureDir(context)),
     );
     actions.register("playwright.runPlan", async (input, context) => {
-      const result = await executeRunPlan(
+      const realOptions: PlaywrightRealOptions = {
+        browserType,
+        headless: true,
+        screenshotOnFailure: true,
+        screenshotOnPass: false,
+        collectConsoleLogs: true,
+        timeout: 30000,
+        retryCount: 3,
+      };
+      const result = await selfHealingRun(
         input as RunPlan,
-        {
-          browserType: "chromium",
-          headless: true,
-          screenshotOnFailure: true,
-          screenshotOnPass: false,
-          collectConsoleLogs: true,
-          timeout: 30000,
-          retryCount: 0,
-        },
+        realOptions,
         featureDir(context),
+        executeRunPlan,
+        { maxAttempts: realOptions.retryCount, backoffMs: 50 },
       );
       return result.record;
     });
