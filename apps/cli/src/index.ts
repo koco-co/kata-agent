@@ -56,6 +56,17 @@ function runtimeMode(): RuntimeFactoryOptions["mode"] {
   return mode;
 }
 
+function notifyMode(): RuntimeFactoryOptions["notifyMode"] {
+  const value = argValue("--notify") ?? "mock";
+  if (value !== "mock" && value !== "real" && value !== "off") {
+    console.error(
+      `Invalid --notify: ${value}. Expected "mock", "real", or "off".`,
+    );
+    process.exit(1);
+  }
+  return value;
+}
+
 function browserType(): PlaywrightRealOptions["browserType"] {
   const browser = argValue("--browser") ?? "chromium";
   if (browser !== "chromium" && browser !== "firefox" && browser !== "webkit") {
@@ -113,6 +124,7 @@ if (command === "test-case-gen") {
     rootDir,
     mode: runtimeMode(),
     browserType: browserType(),
+    notifyMode: notifyMode(),
   });
   const result = await executor.start({
     location: { rootDir, project, feature },
@@ -156,6 +168,7 @@ if (command === "ui-script-gen") {
     mode,
     browserType: browser,
     requireProviderConfig: false,
+    notifyMode: notifyMode(),
   });
   const result = await executor.start({
     location: { rootDir, project, feature },
@@ -202,6 +215,7 @@ if (command === "workflow resume") {
     mode: runtimeMode(),
     browserType: browserType(),
     requireProviderConfig: state.workflowId !== "ui-script-gen",
+    notifyMode: notifyMode(),
   });
   const result = await executor.resume({
     location,

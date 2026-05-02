@@ -6,16 +6,14 @@ import type {
 export async function sendNotification(
   params: NotificationRequest,
 ): Promise<NotificationResult> {
-  const dryRun = params.dryRun === true;
-
   return {
     schemaVersion: "0.1",
     channel: params.channel,
     purpose: params.purpose,
-    status: dryRun ? "dry-run" : "sent",
-    sent: !dryRun,
-    providerResponse: dryRun ? "dry-run" : "ok",
+    status: params.dryRun ? "dry-run" : "sent",
+    sent: params.dryRun ? false : true,
+    messageId: params.dryRun ? undefined : "mock-notification",
+    providerResponse: params.dryRun ? "dry-run" : "mock sent",
     deliveredAt: new Date().toISOString(),
-    ...(dryRun ? {} : { messageId: "mock-notification" }),
   };
 }

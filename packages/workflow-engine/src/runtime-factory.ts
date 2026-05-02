@@ -29,6 +29,7 @@ import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
 import { executeRunPlan } from "../../../plugins/playwright/src/real";
 import { selfHealingRun } from "../../../plugins/playwright/src/self-heal";
+import { sendDingTalkNotification } from "../../../plugins/notify/src/dingtalk";
 import { sendNotification } from "../../../plugins/notify/src/mock";
 import { generateAllureReport } from "../../../plugins/report/src/allure";
 import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
@@ -39,6 +40,7 @@ export interface RuntimeFactoryOptions {
   mode: "mock" | "real";
   browserType?: PlaywrightRealOptions["browserType"];
   requireProviderConfig?: boolean;
+  notifyMode?: "mock" | "real" | "off";
 }
 
 function agent(
@@ -236,7 +238,35 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
 } {
   const providers = new ProviderRegistry();
   const actions = new PluginActionRegistry();
+  const config = new LocalConfigLoader({ rootDir: options.rootDir });
   const browserType = options.browserType ?? "chromium";
+  const notifyMode = options.notifyMode ?? "mock";
+  const requireProviderConfig =
+    options.requireProviderConfig ?? options.mode === "real";
+
+  const registerNotifyAction = () => {
+    if (notifyMode === "off") {
+      actions.register("notify.sendNotification", (input) =>
+        sendNotification({
+          ...(input as NotificationRequest),
+          dryRun: true,
+        }),
+      );
+      return;
+    }
+    if (notifyMode === "real") {
+      actions.register("notify.sendNotification", (input) =>
+        sendDingTalkNotification(input as NotificationRequest, {
+          webhookUrl: config.resolveSecret("DINGTALK_WEBHOOK_URL"),
+          secret: config.resolveSecret("DINGTALK_SECRET"),
+        }),
+      );
+      return;
+    }
+    actions.register("notify.sendNotification", (input) =>
+      sendNotification(input as NotificationRequest),
+    );
+  };
 
   if (options.mode === "mock") {
     providers.register(new MockProvider(createMockAgentResponses()));
@@ -255,15 +285,11 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("report.generateAllureReport", (input, context) =>
       generateAllureReport(input as RunRecord, featureDir(context)),
     );
-    actions.register("notify.sendNotification", (input) =>
-      sendNotification(input as NotificationRequest),
-    );
+    registerNotifyAction();
   } else {
-    const config = new LocalConfigLoader({ rootDir: options.rootDir });
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
     const apiKey = config.resolveSecret("KATA_AGENT_PROVIDER_API_KEY");
     const model = config.resolveSecret("KATA_AGENT_PROVIDER_MODEL");
-    const requireProviderConfig = options.requireProviderConfig ?? true;
     if (baseUrl && apiKey && model) {
       providers.register(
         new OpenAICompatibleProvider({
@@ -310,9 +336,7 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("report.generateAllureReport", (input, context) =>
       generateAllureReport(input as RunRecord, featureDir(context)),
     );
-    actions.register("notify.sendNotification", (input) =>
-      sendNotification(input as NotificationRequest),
-    );
+    registerNotifyAction();
   }
 
   actions.register("knowledge.consult", (input) =>
