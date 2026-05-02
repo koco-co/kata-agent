@@ -27,9 +27,13 @@ nodes:
   - id: render-confirmation-draft
     type: artifact
     dependsOn: [draft-clarification-dossier]
+  - id: send-confirmation-notification
+    type: tool
+    action: notify.sendNotification
+    dependsOn: [render-confirmation-draft]
   - id: await-confirmation-result
     type: human
-    dependsOn: [render-confirmation-draft]
+    dependsOn: [send-confirmation-notification]
   - id: author-requirement-spec
     type: agent
     agent: requirement-author

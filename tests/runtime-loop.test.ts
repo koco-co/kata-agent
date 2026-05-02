@@ -48,6 +48,16 @@ describe("mocked test-case-gen runtime loop", () => {
     expect(started.currentNode).toBe("await-confirmation-result");
 
     const dir = featureDir({ rootDir, project: "demo", feature: "rule-config" });
+    expect(
+      existsSync(
+        join(
+          dir,
+          "requirement",
+          "clarifications",
+          "confirmation-notification-result.json",
+        ),
+      ),
+    ).toBe(true);
     const confirmationPath = join(rootDir, "confirmation-result.json");
     await Bun.write(
       confirmationPath,

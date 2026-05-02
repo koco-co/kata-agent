@@ -8,6 +8,7 @@ import {
   artifactPath,
   createFeatureWorkspace,
   featureDir,
+  readArtifactVerified,
   readArtifactIndex,
   readJsonArtifact,
   writeArtifact,
@@ -17,6 +18,7 @@ import type {
   ArtifactRef,
   BugReport,
   ClarificationDossier,
+  ConfirmationDraft,
   ConfirmationResult,
   DesignReport,
   EvidencePack,
@@ -566,6 +568,40 @@ export class WorkflowExecutor {
                   "workflow-executor",
                   { allowedScopes: ["feature.requirement.clarif"] },
                 ),
+              ),
+            );
+            break;
+          }
+          case "send-confirmation-notification": {
+            if (!node.action) {
+              throw new Error("Missing action: send-confirmation-notification");
+            }
+            const draftRef = refFor("ConfirmationDraft");
+            const markdownRef = readArtifactIndex(
+              context.location,
+            ).artifacts.find(
+              (item) => item.type === "ConfirmationDraftMarkdown",
+            );
+            const markdown = markdownRef
+              ? readArtifactVerified(context.location, markdownRef)
+              : `Confirmation draft: ${valueFor<ConfirmationDraft>("ConfirmationDraft").renderedMarkdownPath}`;
+            const output = (await this.services.actions.execute(
+              node.action,
+              {
+                channel: "dingtalk",
+                purpose: "confirmation",
+                title: `需求澄清待确认: ${context.location.project}/${context.location.feature}`,
+                body: markdown,
+                sourceArtifactRef: draftRef.id,
+              },
+              actionContext,
+            )) as NotificationResult;
+            writtenRefs.push(
+              writeJson(
+                "NotificationResult",
+                "requirement/clarifications/confirmation-notification-result.json",
+                output,
+                ["feature.requirement.clarif"],
               ),
             );
             break;
