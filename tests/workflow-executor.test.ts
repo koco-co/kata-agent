@@ -40,6 +40,7 @@ import {
   type WorkflowDefinition,
 } from "../packages/workflow-engine/src/index";
 import { mockFetchRequirement } from "../plugins/lanhu/src/mock";
+import { sendNotification } from "../plugins/notify/src/mock";
 
 const roots: string[] = [];
 const repoRoot = join(import.meta.dir, "..");
@@ -206,6 +207,9 @@ describe("workflow executor", () => {
       mockFetchRequirement(input as LanhuFetchInput),
     );
     actions.register("knowledge.consult", (input) => consultKnowledge(input as any));
+    actions.register("notify.sendNotification", (input) =>
+      sendNotification(input as any),
+    );
 
     const executor = new WorkflowExecutor({
       agentRunner: new AgentRunner(providerRegistry),

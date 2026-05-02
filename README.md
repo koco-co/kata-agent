@@ -41,3 +41,72 @@ bun apps/cli/src/index.ts ui-script-gen --project <project> --feature <feature> 
 ```
 
 v0.2 does not run mobile or desktop automation.
+
+## v0.4 External Collaboration Plugins
+
+External collaboration side effects are explicit and schema-backed.
+
+### DingTalk notification
+
+`test-case-gen` can send the rendered confirmation draft to DingTalk before it waits for manual confirmation import.
+
+Environment variables for real DingTalk delivery:
+
+- `DINGTALK_WEBHOOK_URL`
+- `DINGTALK_SECRET` when the robot uses signed webhooks
+
+Run with real delivery:
+
+```sh
+bun apps/cli/src/index.ts test-case-gen --mode real --notify real --project <project> --feature <feature> --source-url <lanhu-url> --root .
+```
+
+DingTalk does not approve requirements. Import the canonical confirmation JSON with:
+
+```sh
+bun apps/cli/src/index.ts confirmation import --feature-dir <feature-dir> --run <run-id> --file confirmation-result.json --project <project> --feature <feature>
+```
+
+### Zentao issue sync
+
+Create explicit issue drafts from a bug report:
+
+```sh
+bun apps/cli/src/index.ts issue draft --feature-dir <feature-dir> --bug-report reports/bug-report.json
+```
+
+After reviewing and setting `confirmedForSync` to `true`, sync one draft:
+
+```sh
+bun apps/cli/src/index.ts issue sync --mode real --feature-dir <feature-dir> --issue-draft reports/issues/<bug-id>.issue-draft.json
+```
+
+Environment variables for real Zentao sync:
+
+- `ZENTAO_BASE_URL`
+- `ZENTAO_TOKEN`
+
+### Lanhu write-back
+
+Create a write-back draft from a confirmed requirement spec:
+
+```sh
+bun apps/cli/src/index.ts lanhu writeback-draft --feature-dir <feature-dir> --requirement-spec requirement/spec/requirement-spec.json --target-url <lanhu-url>
+```
+
+After manual review, set `confirmedForWriteback` to `true` and provide `confirmedBy` / `confirmedAt`. Then run:
+
+```sh
+bun apps/cli/src/index.ts lanhu writeback --mode real --feature-dir <feature-dir> --draft reports/lanhu-writeback-draft.json
+```
+
+Validate the same draft without writing by passing the CLI flag:
+
+```sh
+bun apps/cli/src/index.ts lanhu writeback --mode real --dry-run --feature-dir <feature-dir> --draft reports/lanhu-writeback-draft.json
+```
+
+Environment variable for real Lanhu write-back:
+
+- `LANHU_WRITEBACK_COOKIE`
+- `LANHU_WRITEBACK_ALLOWED_HOSTS`, comma-separated hostnames such as `lanhu.example,lanhuapp.com`
