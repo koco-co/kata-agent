@@ -46,7 +46,7 @@ export interface ProviderResponse {
   content: string;
   inputTokens: number;
   outputTokens: number;
-  finishReason: "stop" | "length" | "error";
+  finishReason: "stop" | "length" | "tool_calls" | "error";
   toolCalls?: Array<{
     id: string;
     name: string;

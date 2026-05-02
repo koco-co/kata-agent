@@ -2,7 +2,7 @@
 // Provider tests
 // ---------------------------------------------------------------------------
 
-import { describe, expect, test, mock, afterEach } from "bun:test";
+import { describe, expect, test, mock, afterEach, beforeEach } from "bun:test";
 import { defaultProviderConfig, callProvider } from "../../packages/conversation-agent/src/provider";
 import type { ChatMessage } from "../../packages/conversation-agent/src/types";
 
@@ -13,6 +13,26 @@ import type { ChatMessage } from "../../packages/conversation-agent/src/types";
 function mockJsonResponse(data: unknown, status = 200, statusText = "OK"): Response {
   return new Response(JSON.stringify(data), { status, statusText });
 }
+
+// ---------------------------------------------------------------------------
+// Clean env vars before each test to avoid cross-test pollution
+// ---------------------------------------------------------------------------
+
+const CLEAN_ENV_KEYS = [
+  "KATA_AGENT_MODEL",
+  "KATA_AGENT_BASE_URL",
+  "KATA_AGENT_API_KEY",
+  "DEEPSEEK_API_KEY",
+  "DEEPSEEK_BASE_URL",
+];
+
+beforeEach(() => {
+  for (const key of CLEAN_ENV_KEYS) {
+    if (key in process.env) {
+      delete process.env[key];
+    }
+  }
+});
 
 // ---------------------------------------------------------------------------
 // defaultProviderConfig
