@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/inspection-report.schema.json",
+  "title": "InspectionReport",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "sourceRepoRef",
+    "scanner",
+    "riskPoints",
+    "scannedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "sourceRepoRef": { "type": "string", "minLength": 1 },
+    "scanner": { "const": "static-scan" },
+    "riskPoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "category",
+          "title",
+          "description",
+          "evidence",
+          "recommendation"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+          "category": {
+            "type": "string",
+            "enum": [
+              "debug-code",
+              "unsafe-code",
+              "missing-test-signal",
+              "state-risk",
+              "dependency-risk"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "description": { "type": "string" },
+          "filePath": {
+            "type": "string",
+            "minLength": 1,
+            "allOf": [
+              { "not": { "pattern": "^/" } },
+              { "not": { "pattern": "^[A-Za-z]:" } },
+              { "not": { "pattern": "\\\\" } },
+              { "not": { "pattern": "//" } },
+              { "not": { "pattern": "/$" } },
+              { "not": { "pattern": "(^|/)\\.($|/)" } },
+              { "not": { "pattern": "(^|/)\\.\\.($|/)" } }
+            ]
+          },
+          "line": { "type": "integer", "minimum": 1 },
+          "evidence": { "type": "string" },
+          "recommendation": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "scannedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

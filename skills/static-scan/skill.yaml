@@ -1,0 +1,12 @@
+name: static-scan
+title: 静态风险扫描
+version: 0.3.0
+description: 从显式 diff 和只读 SourceRepoRef 生成可复现的 InspectionReport。
+workflow: static-scan
+status: interface-only
+inputs:
+  schema: StaticScanInput
+outputs:
+  - InspectionReport
+requiredPlugins:
+  - static-scan

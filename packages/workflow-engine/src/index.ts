@@ -30,8 +30,10 @@ export {
   GATE_REGISTRY,
   checkAutomationReadiness,
   checkAutomationScriptReadiness,
+  checkArtifactConsistency,
   checkEvidenceBinding,
   checkRequirementClarity,
+  checkSourceIntegrity,
   checkTestSpecValidity,
 } from "./gates";
 export { validateAutomationAssertions } from "./automation-policy";
@@ -50,7 +52,14 @@ export {
   issueDraftPath,
   renderAutomationReportMarkdown,
   renderConfirmationDraft,
+  renderRequirementSpecMarkdown,
+  renderTestSpecMarkdown,
 } from "./artifact-builders";
+export {
+  buildAutomationFailureReport,
+  buildConflictReport,
+  buildHotfixTestSpec,
+} from "./daily-qa-builders";
 export type {
   WorkflowExecutionContext,
   WorkflowExecutionResult,

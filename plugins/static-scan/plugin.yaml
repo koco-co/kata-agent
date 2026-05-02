@@ -1,0 +1,18 @@
+name: static-scan
+title: 静态风险扫描
+version: 0.1.0
+type: static-scan
+actions:
+  - id: staticScan.scanDiff
+    title: 扫描代码 diff 风险
+    inputSchema: StaticScanInput
+    outputSchema: InspectionReport
+    sideEffects:
+      network: false
+      writeArtifacts: false
+      external: false
+permissions:
+  network: none
+  secrets: []
+  writeScopes:
+    - feature.reports

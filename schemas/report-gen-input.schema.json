@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/report-gen-input.schema.json",
+  "title": "ReportGenInput",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "runRecordRef",
+    "evidencePackRef",
+    "reviewReportRef"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "runRecordRef": { "type": "string", "minLength": 1 },
+    "evidencePackRef": { "type": "string", "minLength": 1 },
+    "reviewReportRef": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

@@ -111,7 +111,9 @@ describe("mocked test-case-gen runtime loop", () => {
 
     for (const path of [
       "requirement/spec/requirement-spec.json",
+      "requirement/spec/requirement-spec.md",
       "test-spec/test-spec.json",
+      "test-spec/test-spec.md",
       "test-spec/review-report.json",
       "exports/xmind/xmind-export.json",
       "exports/xmind/test-spec.xmind",

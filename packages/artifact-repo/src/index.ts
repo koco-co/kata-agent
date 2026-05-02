@@ -3,6 +3,8 @@ export { artifactPath, featureDir } from "./paths";
 export type { ArtifactIndex, WriteArtifactOptions } from "./store";
 export {
   createFeatureWorkspace,
+  indexExistingArtifact,
+  indexExistingArtifactInFeatureDir,
   readArtifactIndex,
   readArtifactVerified,
   writeArtifact,

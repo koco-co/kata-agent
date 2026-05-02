@@ -8,6 +8,7 @@ import {
   artifactPath,
   createFeatureWorkspace,
   featureDir,
+  indexExistingArtifact,
   readArtifactVerified,
   readArtifactIndex,
   readJsonArtifact,
@@ -51,12 +52,16 @@ import {
   buildTestSpecReviewerInput,
   renderAutomationReportMarkdown,
   renderConfirmationDraft,
+  renderRequirementSpecMarkdown,
+  renderTestSpecMarkdown,
 } from "./artifact-builders";
 import {
+  checkArtifactConsistency,
   checkAutomationScriptReadiness,
   checkAutomationReadiness,
   checkEvidenceBinding,
   checkRequirementClarity,
+  checkSourceIntegrity,
   checkTestSpecValidity,
   type GateResult,
 } from "./gates";
@@ -190,9 +195,39 @@ export class WorkflowExecutor {
         .filter(Boolean)
         .map((line) => JSON.parse(line) as TraceEvent);
     };
+    const nextRunnableNodeId = (): string | undefined =>
+      context.definition.nodes.find((node) => {
+        const status = state.nodes[node.id]?.status;
+        return status !== "succeeded" && status !== "skipped";
+      })?.id ?? context.definition.nodes[0]?.id;
+    const verifyIndexedArtifacts = (): string | undefined => {
+      for (const ref of readArtifactIndex(context.location).artifacts) {
+        try {
+          readArtifactVerified(context.location, ref);
+        } catch (error) {
+          return error instanceof Error ? error.message : String(error);
+        }
+      }
+      return undefined;
+    };
 
     createFeatureWorkspace(context.location);
     refreshRefs();
+    const artifactIntegrityError = verifyIndexedArtifacts();
+    if (artifactIntegrityError) {
+      const nodeId = nextRunnableNodeId();
+      if (!nodeId) throw new Error(artifactIntegrityError);
+      state = markFailed(state, nodeId, artifactIntegrityError, false);
+      appendTrace(dir, {
+        runId: context.runId,
+        nodeId,
+        type: "exit",
+        at: new Date().toISOString(),
+        message: artifactIntegrityError,
+      });
+      saveWorkflowState(dir, state);
+      return { state };
+    }
     saveWorkflowState(dir, state);
 
     for (const node of context.definition.nodes) {
@@ -477,6 +512,21 @@ export class WorkflowExecutor {
                 ["feature.sources"],
               ),
             );
+            const result = checkSourceIntegrity(output);
+            gateResults.push(result);
+            appendTrace(dir, {
+              runId: context.runId,
+              nodeId: node.id,
+              type: result.passed ? "gate-passed" : "gate-failed",
+              gateId: result.gateId,
+              at: new Date().toISOString(),
+              details: { violations: result.violations },
+            });
+            if (!result.passed) {
+              state = markBlocked(state, node.id, "source-integrity");
+              saveWorkflowState(dir, state);
+              return { state };
+            }
             break;
           }
           case "normalize-requirement-source": {
@@ -625,6 +675,18 @@ export class WorkflowExecutor {
                 ["feature.requirement.spec"],
               ),
             );
+            writtenRefs.push(
+              remember(
+                writeArtifact(
+                  context.location,
+                  "RequirementSpecMarkdown",
+                  "requirement/spec/requirement-spec.md",
+                  renderRequirementSpecMarkdown(output),
+                  "workflow-executor",
+                  { allowedScopes: ["feature.requirement.spec"] },
+                ),
+              ),
+            );
             break;
           }
           case "design-test-points": {
@@ -654,6 +716,18 @@ export class WorkflowExecutor {
                 "test-spec/test-spec.json",
                 output,
                 ["feature.test-spec"],
+              ),
+            );
+            writtenRefs.push(
+              remember(
+                writeArtifact(
+                  context.location,
+                  "TestSpecMarkdown",
+                  "test-spec/test-spec.md",
+                  renderTestSpecMarkdown(output),
+                  "workflow-executor",
+                  { allowedScopes: ["feature.test-spec"] },
+                ),
               ),
             );
             break;
@@ -745,6 +819,39 @@ export class WorkflowExecutor {
                   ),
                 ),
               );
+            } else {
+              writtenRefs.push(
+                remember(
+                  indexExistingArtifact(
+                    context.location,
+                    "XMindFile",
+                    output.outputPath,
+                    "workflow-executor",
+                    { allowedScopes: ["feature.exports"] },
+                  ),
+                ),
+              );
+            }
+            break;
+          }
+          case "gate-artifact-consistency": {
+            const result = checkArtifactConsistency(
+              valueFor<TestSpec>("TestSpec"),
+              valueFor<XMindExport>("XMindExport"),
+            );
+            gateResults.push(result);
+            appendTrace(dir, {
+              runId: context.runId,
+              nodeId: node.id,
+              type: result.passed ? "gate-passed" : "gate-failed",
+              gateId: result.gateId,
+              at: new Date().toISOString(),
+              details: { violations: result.violations },
+            });
+            if (!result.passed) {
+              state = markBlocked(state, node.id, "artifact-consistency");
+              saveWorkflowState(dir, state);
+              return { state };
             }
             break;
           }

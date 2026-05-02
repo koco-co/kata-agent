@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
@@ -97,5 +97,86 @@ describe("cli runtime", () => {
     expect(resume.exitCode, resume.error).toBe(0);
     const resumed = JSON.parse(resume.output) as { status: string };
     expect(resumed.status).toBe("succeeded");
+  });
+
+  test("confirmation import blocks rejected P0 answers with rebuttal report", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+
+    const start = await runCli([
+      "test-case-gen",
+      "--project",
+      "demo",
+      "--feature",
+      "rule-config",
+      "--source-url",
+      "mock://poor-prd",
+      "--root",
+      rootDir,
+    ]);
+    expect(start.exitCode, start.error).toBe(0);
+    const started = JSON.parse(start.output) as {
+      runId: string;
+      status: string;
+      currentNode: string;
+    };
+    const dir = featureDir({ rootDir, project: "demo", feature: "rule-config" });
+    const rejectedPath = join(rootDir, "confirmation-result-rejected.json");
+    await Bun.write(
+      rejectedPath,
+      JSON.stringify({
+        schemaVersion: "0.1",
+        answers: [
+          {
+            questionId: "GAP-001",
+            status: "rejected",
+            answer: "该问题不能按默认值处理",
+          },
+        ],
+      }),
+    );
+
+    const imported = await runCli([
+      "confirmation",
+      "import",
+      "--feature-dir",
+      dir,
+      "--run",
+      started.runId,
+      "--file",
+      rejectedPath,
+      "--project",
+      "demo",
+      "--feature",
+      "rule-config",
+    ]);
+    expect(imported.exitCode, imported.error).toBe(0);
+
+    const status = await runCli([
+      "workflow",
+      "status",
+      "--feature-dir",
+      dir,
+      "--run",
+      started.runId,
+    ]);
+    expect(status.exitCode, status.error).toBe(0);
+    const state = JSON.parse(status.output) as {
+      status: string;
+      currentNode: string;
+      nodes: Record<string, { status: string; error?: string }>;
+    };
+
+    expect(state.status).toBe("blocked");
+    expect(state.currentNode).toBe("await-confirmation-result");
+    expect(state.nodes["await-confirmation-result"]).toEqual({
+      status: "blocked",
+      error: "rejected P0 confirmation answers",
+    });
+    const rebuttalPath = join(dir, "reports", "clarification-rebuttal.md");
+    expect(existsSync(rebuttalPath)).toBe(true);
+    expect(readFileSync(rebuttalPath, "utf8")).toContain(
+      "GAP-001: 保存按钮文案是什么?",
+    );
   });
 });

@@ -5,7 +5,8 @@ export type PluginType =
   | "notification"
   | "issue-tracker"
   | "requirement-writeback"
-  | "rule-source";
+  | "rule-source"
+  | "static-scan";
 export type NetworkPermission = "none" | "restricted" | "open";
 
 export interface PluginActionManifest {

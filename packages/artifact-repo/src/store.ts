@@ -35,7 +35,7 @@ const WRITE_SCOPE_PREFIXES: Record<string, string[]> = {
   "feature.reports": ["reports/"],
 };
 
-function sha256(content: string): string {
+function sha256(content: string | Uint8Array): string {
   return `sha256:${createHash("sha256").update(content).digest("hex")}`;
 }
 
@@ -141,6 +141,50 @@ export function writeArtifactInFeatureDir(
   return ref;
 }
 
+export function indexExistingArtifactInFeatureDir(
+  featureWorkspaceDir: string,
+  type: string,
+  relativePath: string,
+  createdBy: string,
+  options: WriteArtifactOptions = {},
+): ArtifactRef {
+  assertWriteScopes(relativePath, options.allowedScopes);
+  const path = artifactPathInFeatureDir(featureWorkspaceDir, relativePath);
+  if (!existsSync(path)) {
+    throw new Error(`Artifact file does not exist: ${relativePath}`);
+  }
+  const ref: ArtifactRef = {
+    id: `${type}:${randomUUID()}`,
+    type,
+    path: relativePath,
+    schemaVersion: "0.1",
+    createdBy,
+    createdAt: new Date().toISOString(),
+    hash: sha256(readFileSync(path)),
+  };
+  const index = readArtifactIndexInFeatureDir(
+    featureWorkspaceDir,
+    options.project,
+    options.feature,
+  );
+  const artifacts = index.artifacts.filter((item) => item.path !== relativePath);
+  artifacts.push(ref);
+  writeFileSync(
+    artifactPathInFeatureDir(featureWorkspaceDir, "artifact-index.json"),
+    JSON.stringify(
+      {
+        ...index,
+        project: options.project ?? index.project,
+        feature: options.feature ?? index.feature,
+        artifacts,
+      },
+      null,
+      2,
+    ),
+  );
+  return ref;
+}
+
 export function createFeatureWorkspace(location: FeatureLocation): string {
   const dir = featureDir(location);
   for (const child of [
@@ -203,14 +247,31 @@ export function writeArtifact(
   );
 }
 
+export function indexExistingArtifact(
+  location: FeatureLocation,
+  type: string,
+  relativePath: string,
+  createdBy: string,
+  options: WriteArtifactOptions = {},
+): ArtifactRef {
+  createFeatureWorkspace(location);
+  return indexExistingArtifactInFeatureDir(
+    featureDir(location),
+    type,
+    relativePath,
+    createdBy,
+    { ...options, project: location.project, feature: location.feature },
+  );
+}
+
 export function readArtifactVerified(
   location: FeatureLocation,
   ref: ArtifactRef,
 ): string {
-  const content = readFileSync(artifactPath(location, ref.path), "utf8");
+  const content = readFileSync(artifactPath(location, ref.path));
   const actual = sha256(content);
   if (actual !== ref.hash) {
     throw new Error(`Artifact hash mismatch: ${ref.path}`);
   }
-  return content;
+  return content.toString("utf8");
 }

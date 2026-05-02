@@ -17,7 +17,8 @@
         "notification",
         "issue-tracker",
         "requirement-writeback",
-        "rule-source"
+        "rule-source",
+        "static-scan"
       ]
     },
     "actions": { "type": "array" },

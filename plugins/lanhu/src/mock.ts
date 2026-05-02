@@ -19,7 +19,14 @@ export function mockFetchRequirement(
       },
     ],
     images: [],
-    rawFiles: [],
+    rawFiles: [
+      {
+        id: "RAW-001",
+        path: "sources/lanhu/requirement.txt",
+        mediaType: "text/plain",
+        hash: "sha256:mock-requirement-source",
+      },
+    ],
     fetchedAt: "2026-05-01T00:00:00.000Z",
   };
 }

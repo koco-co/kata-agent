@@ -64,6 +64,17 @@ export type {
   RunStatus,
   UiScriptGenInput,
 } from "./automation";
+export type {
+  AutomationFailureReport,
+  ConflictReport,
+  HotfixCaseGenInput,
+  InspectionReport,
+  ReportGenInput,
+  RiskPoint,
+  RiskSeverity,
+  SourceRepoRef,
+  StaticScanInput,
+} from "./daily-qa";
 export { SCHEMA_NAMES, SCHEMA_REGISTRY, type SchemaName } from "./schemas";
 export {
   assertValidSchema,

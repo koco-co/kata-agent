@@ -9,6 +9,7 @@ import type {
   EvidencePack,
   FlowAssertionKind,
   FlowSpec,
+  RequirementSpec,
   RequirementAnalysisInput,
   RequirementAuthorInput,
   RunMode,
@@ -316,6 +317,95 @@ export function renderConfirmationDraft(
   };
 }
 
+export function renderRequirementSpecMarkdown(
+  requirement: RequirementSpec,
+): string {
+  const lines = [
+    `# ${requirement.title}`,
+    "",
+    `- Project: ${requirement.project}`,
+    `- Feature: ${requirement.feature}`,
+    `- Status: ${requirement.status}`,
+    "",
+    "## Rules",
+    ...noneIfEmpty(
+      requirement.rules.map(
+        (rule) =>
+          `- [${rule.severity}] ${rule.id}: ${rule.text} (source: ${rule.sourceType})`,
+      ),
+    ),
+    "",
+    "## Page Contracts",
+    ...noneIfEmpty(
+      requirement.pageContracts.map(
+        (contract) =>
+          `- ${contract.id}: ${contract.name} (${contract.surface})`,
+      ),
+    ),
+    "",
+    "## Open Items",
+    ...noneIfEmpty(
+      requirement.openItems.map(
+        (item) =>
+          `- [${item.severity}/${item.status}] ${item.id}: ${item.question}`,
+      ),
+    ),
+    "",
+    "## Assumptions",
+    ...noneIfEmpty(
+      requirement.assumptions.map(
+        (assumption) =>
+          `- [${assumption.risk}] ${assumption.id}: ${assumption.content}`,
+      ),
+    ),
+    "",
+  ];
+  return lines.join("\n");
+}
+
+export function renderTestSpecMarkdown(spec: TestSpec): string {
+  const lines = [
+    `# ${spec.title}`,
+    "",
+    `- Project: ${spec.project}`,
+    `- Feature: ${spec.feature}`,
+    `- Status: ${spec.status}`,
+    `- Requirement: ${spec.requirementRef}`,
+    "",
+  ];
+
+  for (const module of spec.modules) {
+    lines.push(`## ${module.name}`, "", `- Module ID: ${module.id}`);
+    for (const testCase of module.cases) {
+      lines.push("", `### [${testCase.priority}] ${testCase.id}: ${testCase.title}`, "");
+      lines.push(`- Requirements: ${testCase.requirementRefs.join(", ")}`);
+      lines.push(
+        `- Automation: ${testCase.automation.surface}/${testCase.automation.readiness}`,
+      );
+      lines.push("", "#### Steps");
+      lines.push(
+        ...noneIfEmpty(
+          testCase.steps.map(
+            (step) => `- ${step.id}: ${step.action} => ${step.expected}`,
+          ),
+        ),
+      );
+      lines.push("", "#### Assertions");
+      lines.push(
+        ...noneIfEmpty(
+          testCase.assertions.map(
+            (assertion) =>
+              `- ${assertion.id} [${assertion.layer}/${assertion.kind}] ${assertion.target} => ${assertion.expected}`,
+          ),
+        ),
+      );
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
 export function buildDesignReport(
   artifactRefs: ArtifactRef[],
   gateResults: GateResult[],
@@ -331,6 +421,10 @@ export function buildDesignReport(
       violations: result.violations,
     })),
   };
+}
+
+function noneIfEmpty(lines: string[]): string[] {
+  return lines.length > 0 ? lines : ["- None"];
 }
 
 export {

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/source-repo-ref.schema.json",
+  "title": "SourceRepoRef",
+  "type": "object",
+  "required": ["schemaVersion", "repoId", "sourceRoot", "readOnly"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "repoId": { "type": "string", "minLength": 1 },
+    "sourceRoot": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        { "not": { "pattern": "^/" } },
+        { "not": { "pattern": "^[A-Za-z]:" } },
+        { "not": { "pattern": "\\\\" } },
+        { "not": { "pattern": "//" } },
+        { "not": { "pattern": "/$" } },
+        { "not": { "pattern": "(^|/)\\.($|/)" } },
+        { "not": { "pattern": "(^|/)\\.\\.($|/)" } }
+      ]
+    },
+    "branch": { "type": "string" },
+    "commit": { "type": "string" },
+    "readOnly": { "const": true }
+  },
+  "additionalProperties": false
+}

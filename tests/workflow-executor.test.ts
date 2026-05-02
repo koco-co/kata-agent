@@ -21,6 +21,7 @@ import {
   artifactPath,
   createFeatureWorkspace,
   featureDir,
+  readArtifactIndex,
   writeJsonArtifact,
 } from "../packages/artifact-repo/src/index";
 import type {
@@ -131,6 +132,21 @@ const xmindOnlyWorkflow: WorkflowDefinition = {
   version: "0.1",
   skill: "test-case-gen",
   nodes: [{ id: "export-xmind", type: "tool", action: "xmind.export" }],
+};
+
+const xmindWithConsistencyWorkflow: WorkflowDefinition = {
+  id: "xmind-with-consistency",
+  version: "0.1",
+  skill: "test-case-gen",
+  nodes: [
+    { id: "export-xmind", type: "tool", action: "xmind.export" },
+    {
+      id: "gate-artifact-consistency",
+      type: "gate",
+      gate: "artifact-consistency",
+      dependsOn: ["export-xmind"],
+    },
+  ],
 };
 
 const designReportAfterGateWorkflow: WorkflowDefinition = {
@@ -296,6 +312,45 @@ describe("workflow executor", () => {
     );
   });
 
+  test("blocks unusable requirement sources before agent normalization", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "empty-source" };
+
+    const actions = new PluginActionRegistry();
+    actions.register("lanhu.fetchRequirement", () => ({
+      schemaVersion: "0.1",
+      sourceType: "lanhu",
+      sourceUrl: "mock://empty",
+      textBlocks: [],
+      images: [],
+      rawFiles: [],
+      fetchedAt: "2026-05-02T00:00:00.000Z",
+    }));
+
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const result = await executor.start({
+      location,
+      definition: loadWorkflow(),
+      runId: "run-empty-source",
+      sourceUrl: "mock://empty",
+    });
+
+    expect(result.state.status).toBe("blocked");
+    expect(result.state.currentNode).toBe("ingest-requirement-source");
+    expect(result.state.nodes["ingest-requirement-source"].status).toBe(
+      "blocked",
+    );
+    expect(
+      readFileSync(join(featureDir(location), "traces", "run-empty-source.jsonl"), "utf8"),
+    ).toContain('"gateId":"source-integrity"');
+  });
+
   test("does not overwrite xmind file created by export action", async () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
@@ -340,6 +395,13 @@ describe("workflow executor", () => {
         "utf8",
       ),
     ).toContain('"outputPath": "exports/xmind/test-spec.xmind"');
+    expect(
+      readArtifactIndex(location).artifacts.some(
+        (item) =>
+          item.type === "XMindFile" &&
+          item.path === "exports/xmind/test-spec.xmind",
+      ),
+    ).toBe(true);
   });
 
   test("overwrites stale xmind file with mock fallback", async () => {
@@ -377,6 +439,41 @@ describe("workflow executor", () => {
 
     expect(result.state.status).toBe("succeeded");
     expect(readFileSync(stalePath, "utf8")).toBe("mock xmind export: 1 cases\n");
+  });
+
+  test("blocks when XMind export case count differs from TestSpec", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    writeTestSpec(location);
+
+    const actions = new PluginActionRegistry();
+    actions.register("xmind.export", () => ({
+      schemaVersion: "0.1",
+      outputPath: "exports/xmind/test-spec.xmind",
+      caseCount: 0,
+    }) satisfies XMindExport);
+
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const result = await executor.start({
+      location,
+      definition: xmindWithConsistencyWorkflow,
+      runId: "run-xmind-mismatch",
+    });
+
+    expect(result.state.status).toBe("blocked");
+    expect(result.state.currentNode).toBe("gate-artifact-consistency");
+    expect(result.state.nodes["gate-artifact-consistency"].status).toBe(
+      "blocked",
+    );
+    expect(
+      readFileSync(join(featureDir(location), "traces", "run-xmind-mismatch.jsonl"), "utf8"),
+    ).toContain("XMind case count 0 does not match TestSpec case count 1");
   });
 
   test("reconstructs gate results from trace when resuming into design report", async () => {
@@ -425,5 +522,43 @@ describe("workflow executor", () => {
     expect(report.gateResults).toEqual([
       { gateId: "requirement-test-readiness", passed: true, violations: [] },
     ]);
+  });
+
+  test("fails resume when an indexed artifact hash no longer matches", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    const dir = createFeatureWorkspace(location);
+    const runId = "run-hash-mismatch";
+    writeTestSpec(location);
+    writeFileSync(
+      artifactPath(location, "test-spec/test-spec.json"),
+      '{"tampered":true}\n',
+    );
+    const workflow: WorkflowDefinition = {
+      id: "hash-guard",
+      version: "0.1",
+      skill: "test-case-gen",
+      nodes: [{ id: "write-design-report", type: "artifact" }],
+    };
+    saveWorkflowState(dir, createRunState(workflow, runId));
+
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions: new PluginActionRegistry(),
+      agents: new Map(),
+    });
+
+    const result = await executor.resume({
+      location,
+      definition: workflow,
+      runId,
+    });
+
+    expect(result.state.status).toBe("failed");
+    expect(result.state.nodes["write-design-report"].status).toBe("failed");
+    expect(result.state.nodes["write-design-report"].error).toContain(
+      "Artifact hash mismatch: test-spec/test-spec.json",
+    );
   });
 });

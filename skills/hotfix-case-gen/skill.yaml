@@ -1,0 +1,10 @@
+name: hotfix-case-gen
+title: 热修复回归用例生成
+version: 0.3.0
+description: 从已审核 IssueDraft 和只读 SourceRepoRef 生成聚焦回归 TestSpec。
+workflow: hotfix-case-gen
+status: interface-only
+inputs:
+  schema: HotfixCaseGenInput
+outputs:
+  - TestSpec

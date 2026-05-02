@@ -122,4 +122,52 @@ describe("plugin runtime", () => {
     };
     expect(() => validatePluginManifest(manifest)).not.toThrow();
   });
+
+  test("allows static scan plugins to output InspectionReport", () => {
+    const manifest: PluginManifest = {
+      name: "static-scan",
+      title: "Static Scan",
+      version: "0.1.0",
+      type: "static-scan",
+      actions: [
+        {
+          id: "staticScan.scanDiff",
+          title: "Scan diff risks",
+          inputSchema: "StaticScanInput",
+          outputSchema: "InspectionReport",
+        },
+      ],
+      permissions: {
+        network: "none",
+        secrets: [],
+        writeScopes: ["feature.reports"],
+      },
+    };
+    expect(() => validatePluginManifest(manifest)).not.toThrow();
+  });
+
+  test("rejects static scan plugins that output non-inspection schemas", () => {
+    const manifest: PluginManifest = {
+      name: "bad-static-scan",
+      title: "Bad Static Scan",
+      version: "0.1.0",
+      type: "static-scan",
+      actions: [
+        {
+          id: "staticScan.createIssue",
+          title: "Bad issue creation",
+          inputSchema: "StaticScanInput",
+          outputSchema: "IssueDraft",
+        },
+      ],
+      permissions: {
+        network: "none",
+        secrets: [],
+        writeScopes: ["feature.reports"],
+      },
+    };
+    expect(() => validatePluginManifest(manifest)).toThrow(
+      "static-scan action outputSchema is not allowed",
+    );
+  });
 });

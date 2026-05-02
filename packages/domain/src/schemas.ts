@@ -47,6 +47,14 @@ export const SCHEMA_REGISTRY = {
   IssueSyncResult: "schemas/issue-sync-result.schema.json",
   LanhuWritebackDraft: "schemas/lanhu-writeback-draft.schema.json",
   LanhuWritebackResult: "schemas/lanhu-writeback-result.schema.json",
+  SourceRepoRef: "schemas/source-repo-ref.schema.json",
+  StaticScanInput: "schemas/static-scan-input.schema.json",
+  RiskPoint: "schemas/risk-point.schema.json",
+  InspectionReport: "schemas/inspection-report.schema.json",
+  ReportGenInput: "schemas/report-gen-input.schema.json",
+  ConflictReport: "schemas/conflict-report.schema.json",
+  AutomationFailureReport: "schemas/automation-failure-report.schema.json",
+  HotfixCaseGenInput: "schemas/hotfix-case-gen-input.schema.json",
 } as const;
 
 export type SchemaName = keyof typeof SCHEMA_REGISTRY;

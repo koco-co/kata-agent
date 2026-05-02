@@ -4,15 +4,16 @@ import type {
   RequirementDraft,
   RequirementSpec,
 } from "../../domain/src/index";
-import { writeSuggestion } from "./store";
+import { searchKnowledge, writeSuggestion, type KnowledgeLocation } from "./store";
 
 export function consultKnowledge(
   input: RequirementDraft,
+  location?: KnowledgeLocation,
 ): KnowledgeConsultResult {
   return {
     schemaVersion: "0.1",
     query: input.title,
-    snippets: [],
+    snippets: location ? searchKnowledge(location, input.title) : [],
   };
 }
 

@@ -42,6 +42,26 @@ bun apps/cli/src/index.ts ui-script-gen --project <project> --feature <feature> 
 
 v0.2 does not run mobile or desktop automation.
 
+## v0.3 Daily QA Skills
+
+`static-scan` reads explicit diff input and writes advisory inspection artifacts. It does not mutate source repositories or create issues.
+
+```sh
+bun apps/cli/src/index.ts static-scan --root <root> --project <project> --feature <feature> --repo-id <repo> --source-root source-repos/frontend --diff-file diff.patch
+```
+
+`report-gen` creates bug, conflict, and automation failure reports from existing artifacts:
+
+```sh
+bun apps/cli/src/index.ts report-gen --feature-dir <feature-dir> --run-record automation/run-record.json --evidence-pack automation/evidence-pack.json --review-report test-spec/review-report.json
+```
+
+`hotfix-case-gen` creates a focused regression `TestSpec` from an explicit issue draft and read-only source repo reference:
+
+```sh
+bun apps/cli/src/index.ts hotfix-case-gen --feature-dir <feature-dir> --issue-draft reports/issues/<bug-id>.issue-draft.json --source-repo reports/static-scan/source-repo-ref.json
+```
+
 ## v0.4 External Collaboration Plugins
 
 External collaboration side effects are explicit and schema-backed.

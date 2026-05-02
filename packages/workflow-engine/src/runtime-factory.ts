@@ -378,8 +378,11 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     );
   }
 
-  actions.register("knowledge.consult", (input) =>
-    consultKnowledge(input as RequirementDraft),
+  actions.register("knowledge.consult", (input, context) =>
+    consultKnowledge(input as RequirementDraft, {
+      rootDir: context.rootDir,
+      project: context.project,
+    }),
   );
   actions.register("knowledge.propose", (input, context) =>
     proposeKnowledge(input as RequirementSpec, context.rootDir),

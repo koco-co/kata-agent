@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/automation-failure-report.schema.json",
+  "title": "AutomationFailureReport",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "sourceRunRecordRef",
+    "failedCases",
+    "generatedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "sourceRunRecordRef": { "type": "string", "minLength": 1 },
+    "failedCases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testCaseId", "status", "failedAssertions"],
+        "properties": {
+          "testCaseId": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["passed", "failed", "error", "skipped", "blocked"]
+          },
+          "failedAssertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["assertionId", "expected"],
+              "properties": {
+                "assertionId": { "type": "string", "minLength": 1 },
+                "expected": { "type": "string" },
+                "actual": { "type": "string" },
+                "message": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

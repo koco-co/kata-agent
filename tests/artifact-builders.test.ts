@@ -5,11 +5,15 @@ import {
   buildRequirementAuthorInput,
   buildTestSpecAuthorInput,
   buildTestSpecReviewerInput,
+  renderRequirementSpecMarkdown,
   renderConfirmationDraft,
+  renderTestSpecMarkdown,
 } from "../packages/workflow-engine/src/index";
 import type {
   ArtifactRef,
   ClarificationDossier,
+  RequirementSpec,
+  TestSpec,
 } from "../packages/domain/src/index";
 
 function ref(type: string, path: string): ArtifactRef {
@@ -73,6 +77,113 @@ describe("workflow artifact builders", () => {
     const rendered = renderConfirmationDraft(dossierRef, dossier);
     expect(rendered.draft.clarificationDossierRef).toBe("ClarificationDossier:1");
     expect(rendered.markdown).toContain("按钮文案是保存还是确定?");
+  });
+
+  test("renders RequirementSpec markdown from canonical JSON facts", () => {
+    const requirement: RequirementSpec = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "规则配置",
+      status: "confirmed",
+      rules: [
+        {
+          id: "REQ-001",
+          text: "保存成功后展示成功提示。",
+          severity: "P0",
+          sourceType: "confirmation",
+          sourceRefs: ["SRC-001"],
+          confirmationQuestionId: "GAP-001",
+        },
+      ],
+      pageContracts: [{ id: "PAGE-001", name: "规则配置页", surface: "web" }],
+      openItems: [],
+      assumptions: [],
+    };
+
+    expect(renderRequirementSpecMarkdown(requirement)).toBe(
+      [
+        "# 规则配置",
+        "",
+        "- Project: demo",
+        "- Feature: rule-config",
+        "- Status: confirmed",
+        "",
+        "## Rules",
+        "- [P0] REQ-001: 保存成功后展示成功提示。 (source: confirmation)",
+        "",
+        "## Page Contracts",
+        "- PAGE-001: 规则配置页 (web)",
+        "",
+        "## Open Items",
+        "- None",
+        "",
+        "## Assumptions",
+        "- None",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("renders TestSpec markdown from canonical JSON facts", () => {
+    const spec: TestSpec = {
+      schemaVersion: "0.1",
+      project: "demo",
+      feature: "rule-config",
+      title: "规则配置测试",
+      requirementRef: "RequirementSpec:abc",
+      status: "reviewed",
+      modules: [
+        {
+          id: "MOD-001",
+          name: "保存",
+          requirementRefs: ["REQ-001"],
+          cases: [
+            {
+              id: "TC-001",
+              title: "保存规则成功",
+              priority: "P0",
+              requirementRefs: ["REQ-001"],
+              steps: [
+                {
+                  id: "STEP-001",
+                  action: "点击保存",
+                  expected: "展示成功提示",
+                  requirementRefs: ["REQ-001"],
+                },
+              ],
+              assertions: [
+                {
+                  id: "ASSERT-001",
+                  layer: "L1",
+                  kind: "text",
+                  target: "toast",
+                  expected: "保存成功",
+                  requirementRefs: ["REQ-001"],
+                },
+              ],
+              automation: {
+                surface: "web",
+                readiness: "ready",
+                uiContractRefs: ["PAGE-001"],
+                blockers: [],
+              },
+              traceability: {
+                requirementRefs: ["REQ-001"],
+                sourceRefs: ["SRC-001"],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(renderTestSpecMarkdown(spec)).toContain(
+      "### [P0] TC-001: 保存规则成功",
+    );
+    expect(renderTestSpecMarkdown(spec)).toContain(
+      "- ASSERT-001 [L1/text] toast => 保存成功",
+    );
   });
 
   test("builds design report from artifacts, gates, and trace", () => {

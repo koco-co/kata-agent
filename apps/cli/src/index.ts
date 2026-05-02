@@ -7,34 +7,57 @@ import YAML from "yaml";
 import {
   readArtifactIndex,
   readJsonArtifact,
+  writeArtifact,
   writeArtifactInFeatureDir,
   writeJsonArtifact,
 } from "../../../packages/artifact-repo/src/index";
 import { LocalConfigLoader } from "../../../packages/core/src/index";
 import {
   assertValidSchema,
+  type ArtifactRef,
   type BugReport,
   type ConfirmationResult,
+  type EvidencePack,
+  type HotfixCaseGenInput,
   type IssueDraft,
   type LanhuWritebackDraft,
   type PlaywrightRealOptions,
+  type RequirementGapReport,
   type RequirementSpec,
+  type ReportGenInput,
+  type ReviewReport,
+  type RunRecord,
+  type SourceRepoRef,
+  type StaticScanInput,
   type UiScriptGenInput,
 } from "../../../packages/domain/src/index";
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
 import {
+  acceptSuggestion,
+  rejectSuggestion,
+  searchKnowledge,
+} from "../../../packages/knowledge-repo/src/index";
+import {
   appendTrace,
+  buildAutomationFailureReport,
+  buildBugReport,
+  buildConflictReport,
+  buildHotfixTestSpec,
   buildIssueDraftsFromBugReport,
   buildLanhuWritebackDraft,
   createRuntimeServices,
   issueDraftPath,
   loadWorkflowState,
+  markBlocked,
   markSucceeded,
+  renderAutomationReportMarkdown,
   saveWorkflowState,
+  renderTestSpecMarkdown,
   type RuntimeFactoryOptions,
   type WorkflowDefinition,
 } from "../../../packages/workflow-engine/src/index";
 import { mockWriteLanhuRequirement } from "../../../plugins/lanhu-writeback/src/mock";
+import { scanStaticDiff } from "../../../plugins/static-scan/src/scan";
 import { writeLanhuRequirement } from "../../../plugins/lanhu-writeback/src/real";
 import { mockSyncIssueToZentao } from "../../../plugins/zentao/src/mock";
 import { syncIssueToZentao } from "../../../plugins/zentao/src/real";
@@ -136,6 +159,21 @@ function parseFeatureDir(featureDir: string): {
   };
 }
 
+function requireArtifactRefByPath(
+  index: { artifacts: ArtifactRef[] },
+  type: string,
+  path: string,
+): ArtifactRef {
+  const ref = index.artifacts.find(
+    (item) => item.type === type && item.path === path,
+  );
+  if (!ref) {
+    console.error(`Missing ${type} artifact: ${path}`);
+    process.exit(1);
+  }
+  return ref;
+}
+
 if (!command || command === "help") {
   console.log(
     "kata-agent commands: test-case-gen, ui-script-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
@@ -147,6 +185,41 @@ if (command === "knowledge suggestions") {
   const rootDir = requireArg("--root");
   const project = requireArg("--project");
   console.log(JSON.stringify(listSuggestions({ rootDir, project }), null, 2));
+  process.exit(0);
+}
+
+if (command === "knowledge search") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  const query = requireArg("--query");
+  console.log(
+    JSON.stringify(searchKnowledge({ rootDir, project }, query), null, 2),
+  );
+  process.exit(0);
+}
+
+if (command === "knowledge accept") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  const suggestion = requireArg("--suggestion");
+  console.log(
+    JSON.stringify(acceptSuggestion({ rootDir, project }, suggestion), null, 2),
+  );
+  process.exit(0);
+}
+
+if (command === "knowledge reject") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  const suggestion = requireArg("--suggestion");
+  const reason = argValue("--reason") ?? "rejected by user";
+  console.log(
+    JSON.stringify(
+      rejectSuggestion({ rootDir, project }, suggestion, reason),
+      null,
+      2,
+    ),
+  );
   process.exit(0);
 }
 
@@ -314,6 +387,252 @@ if (command === "lanhu writeback") {
   }
 }
 
+if (command === "static-scan") {
+  const rootDir = requireArg("--root");
+  const project = requireArg("--project");
+  const feature = requireArg("--feature");
+  const repoId = requireArg("--repo-id");
+  const sourceRoot = requireArg("--source-root");
+  const diffFile = requireArg("--diff-file");
+  const location = { rootDir, project, feature };
+  const sourceRepoRefPath = "reports/static-scan/source-repo-ref.json";
+  const staticScanInputPath = "reports/static-scan/static-scan-input.json";
+  const inspectionReportPath = "reports/static-scan/inspection-report.json";
+
+  try {
+    const sourceRepo: SourceRepoRef = {
+      schemaVersion: "0.1",
+      repoId,
+      sourceRoot,
+      readOnly: true,
+    };
+    const sourceRepoRef = writeJsonArtifact(
+      location,
+      "SourceRepoRef",
+      sourceRepoRefPath,
+      sourceRepo,
+      "static-scan",
+      { allowedScopes: ["feature.reports"] },
+    );
+    const input: StaticScanInput = {
+      schemaVersion: "0.1",
+      project,
+      feature,
+      sourceRepoRef: sourceRepoRef.id,
+      diffText: readFileSync(diffFile, "utf8"),
+    };
+    writeJsonArtifact(
+      location,
+      "StaticScanInput",
+      staticScanInputPath,
+      input,
+      "static-scan",
+      { allowedScopes: ["feature.reports"] },
+    );
+    writeJsonArtifact(
+      location,
+      "InspectionReport",
+      inspectionReportPath,
+      scanStaticDiff(input),
+      "static-scan",
+      { allowedScopes: ["feature.reports"] },
+    );
+    console.log(
+      JSON.stringify(
+        { sourceRepoRefPath, staticScanInputPath, inspectionReportPath },
+        null,
+        2,
+      ),
+    );
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+if (command === "report-gen") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const runRecordPath = requireArg("--run-record");
+  const evidencePackPath = requireArg("--evidence-pack");
+  const reviewReportPath = requireArg("--review-report");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const runRecordRef = requireArtifactRefByPath(
+    index,
+    "RunRecord",
+    runRecordPath,
+  );
+  const evidencePackRef = requireArtifactRefByPath(
+    index,
+    "EvidencePack",
+    evidencePackPath,
+  );
+  const reviewReportRef = requireArtifactRefByPath(
+    index,
+    "ReviewReport",
+    reviewReportPath,
+  );
+  const input: ReportGenInput = {
+    schemaVersion: "0.1",
+    project: location.project,
+    feature: location.feature,
+    runRecordRef: runRecordRef.id,
+    evidencePackRef: evidencePackRef.id,
+    reviewReportRef: reviewReportRef.id,
+  };
+  const bugReportPath = "reports/bug-report.json";
+  const automationFailureReportPath = "reports/automation-failure-report.json";
+  const conflictReportPath = "reports/conflict-report.json";
+  const automationReportMarkdownPath = "reports/automation-report.md";
+
+  try {
+    assertValidSchema("ReportGenInput", input);
+    const runRecord = readJsonArtifact<RunRecord>(
+      location,
+      runRecordRef,
+      "RunRecord",
+    );
+    const evidencePack = readJsonArtifact<EvidencePack>(
+      location,
+      evidencePackRef,
+      "EvidencePack",
+    );
+    if (evidencePack.runRecordRef !== runRecordRef.id) {
+      throw new Error(
+        `EvidencePack does not reference RunRecord: ${evidencePack.runRecordRef} !== ${runRecordRef.id}`,
+      );
+    }
+    const reviewReport = readJsonArtifact<ReviewReport>(
+      location,
+      reviewReportRef,
+      "ReviewReport",
+    );
+    writeJsonArtifact(
+      location,
+      "BugReport",
+      bugReportPath,
+      buildBugReport(runRecord, evidencePack),
+      "report-gen",
+      { allowedScopes: ["feature.reports"] },
+    );
+    writeJsonArtifact(
+      location,
+      "AutomationFailureReport",
+      automationFailureReportPath,
+      buildAutomationFailureReport(runRecordRef.id, runRecord),
+      "report-gen",
+      { allowedScopes: ["feature.reports"] },
+    );
+    writeJsonArtifact(
+      location,
+      "ConflictReport",
+      conflictReportPath,
+      buildConflictReport(
+        reviewReportRef.id,
+        location.project,
+        location.feature,
+        reviewReport,
+      ),
+      "report-gen",
+      { allowedScopes: ["feature.reports"] },
+    );
+    writeArtifact(
+      location,
+      "AutomationReportMarkdown",
+      automationReportMarkdownPath,
+      renderAutomationReportMarkdown(runRecord),
+      "report-gen",
+      { allowedScopes: ["feature.reports"] },
+    );
+    console.log(
+      JSON.stringify(
+        {
+          bugReportPath,
+          automationFailureReportPath,
+          conflictReportPath,
+          automationReportMarkdownPath,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+if (command === "hotfix-case-gen") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const issueDraftArtifactPath = requireArg("--issue-draft");
+  const sourceRepoArtifactPath = requireArg("--source-repo");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const issueDraftRef = requireArtifactRefByPath(
+    index,
+    "IssueDraft",
+    issueDraftArtifactPath,
+  );
+  const sourceRepoRef = requireArtifactRefByPath(
+    index,
+    "SourceRepoRef",
+    sourceRepoArtifactPath,
+  );
+  const input: HotfixCaseGenInput = {
+    schemaVersion: "0.1",
+    project: location.project,
+    feature: location.feature,
+    issueDraftRef: issueDraftRef.id,
+    sourceRepoRef: sourceRepoRef.id,
+  };
+  const testSpecPath = "test-spec/hotfix-test-spec.json";
+  const testSpecMarkdownPath = "test-spec/hotfix-test-spec.md";
+
+  try {
+    assertValidSchema("HotfixCaseGenInput", input);
+    const issueDraft = readJsonArtifact<IssueDraft>(
+      location,
+      issueDraftRef,
+      "IssueDraft",
+    );
+    const sourceRepo = readJsonArtifact<SourceRepoRef>(
+      location,
+      sourceRepoRef,
+      "SourceRepoRef",
+    );
+    const testSpec = buildHotfixTestSpec(
+      issueDraftRef.id,
+      issueDraft,
+      sourceRepo,
+    );
+    writeJsonArtifact(
+      location,
+      "TestSpec",
+      testSpecPath,
+      testSpec,
+      "hotfix-case-gen",
+      { allowedScopes: ["feature.test-spec"] },
+    );
+    writeArtifact(
+      location,
+      "TestSpecMarkdown",
+      testSpecMarkdownPath,
+      renderTestSpecMarkdown(testSpec),
+      "hotfix-case-gen",
+      { allowedScopes: ["feature.test-spec"] },
+    );
+    console.log(
+      JSON.stringify({ testSpecPath, testSpecMarkdownPath }, null, 2),
+    );
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
 if (command === "test-case-gen") {
   const rootDir = requireArg("--root");
   const project = requireArg("--project");
@@ -462,6 +781,7 @@ if (command === "confirmation import") {
   }
   const project = argValue("--project");
   const feature = argValue("--feature");
+  const location = parseFeatureDir(featureDir);
   const ref = writeArtifactInFeatureDir(
     featureDir,
     "ConfirmationResult",
@@ -474,6 +794,36 @@ if (command === "confirmation import") {
       feature,
     },
   );
+  const rejectedP0 = rejectedP0Gaps(location, confirmation);
+  if (rejectedP0.length > 0) {
+    const rebuttalRef = writeArtifactInFeatureDir(
+      featureDir,
+      "ClarificationRebuttalMarkdown",
+      "reports/clarification-rebuttal.md",
+      renderClarificationRebuttal(rejectedP0),
+      "confirmation import",
+      {
+        allowedScopes: ["feature.reports"],
+        project,
+        feature,
+      },
+    );
+    saveWorkflowState(
+      featureDir,
+      markBlocked(state, waitingNode, "rejected P0 confirmation answers"),
+    );
+    appendTrace(featureDir, {
+      runId,
+      nodeId: waitingNode,
+      type: "human-import",
+      artifactRefs: [ref.id, rebuttalRef.id],
+      message: "rejected P0 confirmation answers",
+      at: new Date().toISOString(),
+    });
+    console.log(`confirmation rejected for ${runId}:${waitingNode}`);
+    process.exit(0);
+  }
+
   saveWorkflowState(featureDir, markSucceeded(state, waitingNode));
   appendTrace(featureDir, {
     runId,
@@ -488,3 +838,47 @@ if (command === "confirmation import") {
 
 console.error(`Unknown command: ${command}`);
 process.exit(1);
+
+function rejectedP0Gaps(
+  location: { rootDir: string; project: string; feature: string },
+  confirmation: ConfirmationResult,
+): Array<{ id: string; question: string; answer?: string }> {
+  const index = readArtifactIndex(location);
+  const gapRef = index.artifacts.find(
+    (item) => item.type === "RequirementGapReport",
+  );
+  if (!gapRef) return [];
+  const report = readJsonArtifact<RequirementGapReport>(
+    location,
+    gapRef,
+    "RequirementGapReport",
+  );
+  const answers = new Map(
+    confirmation.answers.map((answer) => [answer.questionId, answer]),
+  );
+  return report.gaps
+    .filter((gap) => gap.severity === "P0")
+    .filter((gap) => answers.get(gap.id)?.status === "rejected")
+    .map((gap) => ({
+      id: gap.id,
+      question: gap.question,
+      answer: answers.get(gap.id)?.answer,
+    }));
+}
+
+function renderClarificationRebuttal(
+  gaps: Array<{ id: string; question: string; answer?: string }>,
+): string {
+  const lines = [
+    "# Clarification Rebuttal",
+    "",
+    "The following P0 clarification answers were rejected. Update the clarification dossier and rerun the human confirmation node.",
+    "",
+    "## Rejected P0 Gaps",
+  ];
+  for (const gap of gaps) {
+    lines.push(`- ${gap.id}: ${gap.question}`);
+    if (gap.answer) lines.push(`  - Answer: ${gap.answer}`);
+  }
+  return `${lines.join("\n")}\n`;
+}

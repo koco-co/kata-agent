@@ -8,6 +8,7 @@ const PLUGIN_OUTPUT_CONTRACTS: Record<string, readonly string[]> = {
   "issue-tracker": ["IssueSyncResult"],
   "requirement-writeback": ["LanhuWritebackResult"],
   "rule-source": ["RuleSet"],
+  "static-scan": ["InspectionReport"],
 };
 
 export function validatePluginManifest(manifest: PluginManifest): void {

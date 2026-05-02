@@ -58,10 +58,14 @@ nodes:
     type: tool
     action: xmind.export
     dependsOn: [gate-readiness]
+  - id: gate-artifact-consistency
+    type: gate
+    gate: artifact-consistency
+    dependsOn: [export-xmind]
   - id: propose-knowledge
     type: tool
     action: knowledge.propose
-    dependsOn: [export-xmind]
+    dependsOn: [gate-artifact-consistency]
   - id: write-design-report
     type: artifact
     dependsOn: [propose-knowledge]

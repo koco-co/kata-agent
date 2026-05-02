@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import YAML from "yaml";
-import { SCHEMA_REGISTRY } from "../packages/domain/src/index";
+import { SCHEMA_REGISTRY, validateSchema } from "../packages/domain/src/index";
 import {
   BUILT_IN_ACTION_IDS,
   GATE_REGISTRY,
@@ -89,6 +89,26 @@ describe("manifest schema references", () => {
     }
   });
 
+  test("plugin manifests validate against PluginManifest schema", () => {
+    for (const file of yamlFiles("plugins")) {
+      const doc = YAML.parse(readFileSync(file, "utf8"));
+      expect(
+        validateSchema("PluginManifest", doc).valid,
+        `${file} must match PluginManifest schema`,
+      ).toBe(true);
+    }
+  });
+
+  test("skill manifests validate against SkillManifest schema", () => {
+    for (const file of yamlFiles("skills")) {
+      const doc = YAML.parse(readFileSync(file, "utf8"));
+      expect(
+        validateSchema("SkillManifest", doc).valid,
+        `${file} must match SkillManifest schema`,
+      ).toBe(true);
+    }
+  });
+
   test("non-interface skill workflows exist", () => {
     for (const file of yamlFiles("skills")) {
       const doc = YAML.parse(readFileSync(file, "utf8")) as {
@@ -99,6 +119,15 @@ describe("manifest schema references", () => {
       expect(
         existsSync(join("workflows", `${doc.workflow}.yaml`)),
         `${file} workflow=${doc.workflow}`,
+      ).toBe(true);
+    }
+  });
+
+  test("v0.3 daily QA skill manifests are present", () => {
+    for (const skill of ["static-scan", "report-gen", "hotfix-case-gen"]) {
+      expect(
+        existsSync(join("skills", skill, "skill.yaml")),
+        `skills/${skill}/skill.yaml`,
       ).toBe(true);
     }
   });
