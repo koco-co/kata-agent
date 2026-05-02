@@ -54,6 +54,10 @@
       "name": "@kata-agent/plugin-lanhu",
       "version": "0.1.0",
     },
+    "plugins/lanhu-writeback": {
+      "name": "@kata-agent/plugin-lanhu-writeback",
+      "version": "0.4.0",
+    },
     "plugins/notify": {
       "name": "@kata-agent/plugin-notify",
       "version": "0.1.0",
@@ -92,6 +96,8 @@
     "@kata-agent/knowledge-repo": ["@kata-agent/knowledge-repo@workspace:packages/knowledge-repo"],
 
     "@kata-agent/plugin-lanhu": ["@kata-agent/plugin-lanhu@workspace:plugins/lanhu"],
+
+    "@kata-agent/plugin-lanhu-writeback": ["@kata-agent/plugin-lanhu-writeback@workspace:plugins/lanhu-writeback"],
 
     "@kata-agent/plugin-notify": ["@kata-agent/plugin-notify@workspace:plugins/notify"],
 

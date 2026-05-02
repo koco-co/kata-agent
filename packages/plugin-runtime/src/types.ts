@@ -4,6 +4,7 @@ export type PluginType =
   | "automation"
   | "notification"
   | "issue-tracker"
+  | "requirement-writeback"
   | "rule-source";
 export type NetworkPermission = "none" | "restricted" | "open";
 

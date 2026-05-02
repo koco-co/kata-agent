@@ -99,4 +99,27 @@ describe("plugin runtime", () => {
     };
     expect(() => validatePluginManifest(manifest)).not.toThrow();
   });
+
+  test("allows requirement writeback plugins to output LanhuWritebackResult", () => {
+    const manifest: PluginManifest = {
+      name: "lanhu-writeback",
+      title: "Lanhu Writeback",
+      version: "0.4.0",
+      type: "requirement-writeback",
+      actions: [
+        {
+          id: "lanhuWriteback.writeRequirement",
+          title: "Write requirement summary back to Lanhu",
+          inputSchema: "LanhuWritebackDraft",
+          outputSchema: "LanhuWritebackResult",
+        },
+      ],
+      permissions: {
+        network: "restricted",
+        secrets: ["LANHU_WRITEBACK_COOKIE"],
+        writeScopes: [],
+      },
+    };
+    expect(() => validatePluginManifest(manifest)).not.toThrow();
+  });
 });

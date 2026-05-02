@@ -6,6 +6,7 @@ const PLUGIN_OUTPUT_CONTRACTS: Record<string, readonly string[]> = {
   automation: ["RunRecord", "EvidencePack"],
   notification: ["NotificationResult"],
   "issue-tracker": ["IssueSyncResult"],
+  "requirement-writeback": ["LanhuWritebackResult"],
   "rule-source": ["RuleSet"],
 };
 

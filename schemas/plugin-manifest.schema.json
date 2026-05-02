@@ -16,6 +16,7 @@
         "automation",
         "notification",
         "issue-tracker",
+        "requirement-writeback",
         "rule-source"
       ]
     },

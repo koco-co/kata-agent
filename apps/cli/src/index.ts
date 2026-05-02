@@ -16,13 +16,16 @@ import {
   type BugReport,
   type ConfirmationResult,
   type IssueDraft,
+  type LanhuWritebackDraft,
   type PlaywrightRealOptions,
+  type RequirementSpec,
   type UiScriptGenInput,
 } from "../../../packages/domain/src/index";
 import { listSuggestions } from "../../../packages/knowledge-repo/src/index";
 import {
   appendTrace,
   buildIssueDraftsFromBugReport,
+  buildLanhuWritebackDraft,
   createRuntimeServices,
   issueDraftPath,
   loadWorkflowState,
@@ -31,6 +34,8 @@ import {
   type RuntimeFactoryOptions,
   type WorkflowDefinition,
 } from "../../../packages/workflow-engine/src/index";
+import { mockWriteLanhuRequirement } from "../../../plugins/lanhu-writeback/src/mock";
+import { writeLanhuRequirement } from "../../../plugins/lanhu-writeback/src/real";
 import { mockSyncIssueToZentao } from "../../../plugins/zentao/src/mock";
 import { syncIssueToZentao } from "../../../plugins/zentao/src/real";
 
@@ -100,6 +105,13 @@ function browserType(): PlaywrightRealOptions["browserType"] {
     process.exit(1);
   }
   return browser;
+}
+
+function parseTrustedDomains(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
@@ -209,6 +221,92 @@ if (command === "issue sync") {
       },
     );
     console.log(JSON.stringify({ path: resultPath, result }, null, 2));
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+}
+
+if (command === "lanhu writeback-draft") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const specPath = requireArg("--requirement-spec");
+  const targetUrl = requireArg("--target-url");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const specRef = index.artifacts.find(
+    (item) => item.type === "RequirementSpec" && item.path === specPath,
+  );
+  if (!specRef) {
+    console.error(`Missing RequirementSpec artifact: ${specPath}`);
+    process.exit(1);
+  }
+  const spec = readJsonArtifact<RequirementSpec>(
+    location,
+    specRef,
+    "RequirementSpec",
+  );
+  const draft = buildLanhuWritebackDraft(specRef, spec, targetUrl);
+  writeJsonArtifact(
+    location,
+    "LanhuWritebackDraft",
+    "reports/lanhu-writeback-draft.json",
+    draft,
+    "lanhu writeback-draft",
+    { allowedScopes: ["feature.reports"] },
+  );
+  console.log(
+    JSON.stringify({ path: "reports/lanhu-writeback-draft.json" }, null, 2),
+  );
+  process.exit(0);
+}
+
+if (command === "lanhu writeback") {
+  const targetFeatureDir = requireArg("--feature-dir");
+  const draftPath = requireArg("--draft");
+  const dryRun = booleanFlag("--dry-run");
+  const location = parseFeatureDir(targetFeatureDir);
+  const index = readArtifactIndex(location);
+  const draftRef = index.artifacts.find(
+    (item) => item.type === "LanhuWritebackDraft" && item.path === draftPath,
+  );
+  if (!draftRef) {
+    console.error(`Missing LanhuWritebackDraft artifact: ${draftPath}`);
+    process.exit(1);
+  }
+  const draft = readJsonArtifact<LanhuWritebackDraft>(
+    location,
+    draftRef,
+    "LanhuWritebackDraft",
+  );
+  try {
+    const config = new LocalConfigLoader({ rootDir: location.rootDir });
+    const trustedDomains = parseTrustedDomains(
+      config.resolveSecret("LANHU_WRITEBACK_ALLOWED_HOSTS"),
+    );
+    const result =
+      runtimeMode() === "real"
+        ? await writeLanhuRequirement(draft, {
+            cookie: config.resolveSecret("LANHU_WRITEBACK_COOKIE"),
+            trustedDomains,
+            dryRun,
+          })
+        : await mockWriteLanhuRequirement(draft, { dryRun: true });
+    writeJsonArtifact(
+      location,
+      "LanhuWritebackResult",
+      "reports/lanhu-writeback-result.json",
+      result,
+      "lanhu writeback",
+      { allowedScopes: ["feature.reports"] },
+    );
+    console.log(
+      JSON.stringify(
+        { path: "reports/lanhu-writeback-result.json", result },
+        null,
+        2,
+      ),
+    );
     process.exit(0);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

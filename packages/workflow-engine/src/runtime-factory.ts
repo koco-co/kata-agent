@@ -10,6 +10,7 @@ import { LocalConfigLoader } from "../../core/src/index";
 import type {
   IssueDraft,
   LanhuFetchInput,
+  LanhuWritebackDraft,
   NotificationRequest,
   PlaywrightRealOptions,
   RequirementDraft,
@@ -25,6 +26,8 @@ import {
 import { PluginActionRegistry } from "../../plugin-runtime/src/index";
 import { fetchLanhuRequirement } from "../../../plugins/lanhu/src/real";
 import { mockFetchRequirement } from "../../../plugins/lanhu/src/mock";
+import { mockWriteLanhuRequirement } from "../../../plugins/lanhu-writeback/src/mock";
+import { writeLanhuRequirement } from "../../../plugins/lanhu-writeback/src/real";
 import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
 import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
@@ -236,6 +239,13 @@ function createAgentManifestMap(): Map<string, AgentManifest> {
   ]);
 }
 
+function parseTrustedDomains(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export function createRuntimeServices(options: RuntimeFactoryOptions): {
   executor: WorkflowExecutor;
 } {
@@ -294,6 +304,11 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
         dryRun: true,
       }),
     );
+    actions.register("lanhuWriteback.writeRequirement", (input) =>
+      mockWriteLanhuRequirement(input as LanhuWritebackDraft, {
+        dryRun: true,
+      }),
+    );
   } else {
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
     const apiKey = config.resolveSecret("KATA_AGENT_PROVIDER_API_KEY");
@@ -349,6 +364,15 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       syncIssueToZentao(input as IssueDraft, {
         baseUrl: config.resolveSecret("ZENTAO_BASE_URL"),
         token: config.resolveSecret("ZENTAO_TOKEN"),
+        dryRun: false,
+      }),
+    );
+    actions.register("lanhuWriteback.writeRequirement", (input) =>
+      writeLanhuRequirement(input as LanhuWritebackDraft, {
+        cookie: config.resolveSecret("LANHU_WRITEBACK_COOKIE"),
+        trustedDomains: parseTrustedDomains(
+          config.resolveSecret("LANHU_WRITEBACK_ALLOWED_HOSTS"),
+        ),
         dryRun: false,
       }),
     );

@@ -110,6 +110,7 @@ describe("domain contracts", () => {
       "automation",
       "notification",
       "issue-tracker",
+      "requirement-writeback",
       "rule-source",
     ]);
     expectEnum("NotificationRequest", ["properties", "purpose"], [
