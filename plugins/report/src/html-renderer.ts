@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { HtmlReport, RunRecord } from "../../../packages/domain/src/index";
+import type { HtmlReport, RunRecord } from "@kata-agent/domain";
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;")

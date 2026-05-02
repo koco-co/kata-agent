@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import JSZip from "jszip";
-import type { TestSpec, XMindExport } from "../../../packages/domain/src/index";
+import type { TestSpec, XMindExport } from "@kata-agent/domain";
 
 interface XMindTopic {
   id: string;

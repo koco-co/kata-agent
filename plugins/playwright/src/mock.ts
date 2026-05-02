@@ -1,4 +1,4 @@
-import type { RunPlan, RunRecord } from "../../../packages/domain/src/index";
+import type { RunPlan, RunRecord } from "@kata-agent/domain";
 import type { PluginActionContext } from "../../../packages/plugin-runtime/src/index";
 import { writeArtifact } from "../../../packages/artifact-repo/src/index";
 

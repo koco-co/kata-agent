@@ -1,4 +1,4 @@
-import type { TestSpec, XMindExport } from "../../../packages/domain/src/index";
+import type { TestSpec, XMindExport } from "@kata-agent/domain";
 
 export function mockExportXMind(input: TestSpec): XMindExport {
   const caseCount = input.modules.reduce(

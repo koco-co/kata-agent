@@ -1,4 +1,4 @@
-import type { HtmlReport, RunRecord } from "../../../packages/domain/src/index";
+import type { HtmlReport, RunRecord } from "@kata-agent/domain";
 import { writeHtmlReport } from "./html-renderer";
 
 export function generateAllureReport(record: RunRecord, featureDir: string): HtmlReport {

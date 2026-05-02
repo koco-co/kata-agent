@@ -1,7 +1,7 @@
 import type {
   NotificationRequest,
   NotificationResult,
-} from "../../../packages/domain/src/index";
+} from "@kata-agent/domain";
 
 export async function sendNotification(
   params: NotificationRequest,

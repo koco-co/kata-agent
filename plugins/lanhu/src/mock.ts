@@ -1,7 +1,7 @@
 import type {
   LanhuFetchInput,
   RequirementSourceBundle,
-} from "../../../packages/domain/src/index";
+} from "@kata-agent/domain";
 
 export function mockFetchRequirement(
   input: LanhuFetchInput,

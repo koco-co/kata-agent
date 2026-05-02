@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type {
   LanhuFetchInput,
   RequirementSourceBundle,
-} from "../../../packages/domain/src/index";
+} from "@kata-agent/domain";
 
 export interface LanhuFetchContext {
   rootDir: string;
