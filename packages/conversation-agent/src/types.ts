@@ -28,14 +28,12 @@ export interface ToolContext {
 }
 
 /** Result returned by a tool execution. */
-export type ToolResult =
-  | { ok: true; summary: string; data?: unknown }
-  | {
-      ok: false;
-      summary: string;
-      data?: unknown;
-      error: { code: string; retryable: boolean; message: string };
-    };
+export interface ToolResult {
+  ok: boolean;
+  summary: string;
+  data?: unknown;
+  error?: { code: string; retryable: boolean; message: string };
+}
 
 /** A single tool available to the conversation agent. */
 export interface ConversationTool {

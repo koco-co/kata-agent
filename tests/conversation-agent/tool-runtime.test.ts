@@ -238,9 +238,10 @@ describe("ToolRuntime", () => {
         },
       };
       runtime.register(tool);
-      const input = { path: "test.txt", mode: "read" };
+      const input: Record<string, unknown> = { path: "test.txt", mode: "read" };
       await runtime.execute("passthrough", input, defaultCtx);
-      expect(receivedInput).toEqual(input);
+      expect(receivedInput).not.toBeNull();
+      expect(receivedInput!).toEqual(input);
     });
 
     test("context is passed to the tool's execute function", async () => {
@@ -262,7 +263,7 @@ describe("ToolRuntime", () => {
       };
       runtime.register(tool);
       await runtime.execute("ctx-check", {}, defaultCtx);
-      expect(receivedCtx).toEqual(defaultCtx);
+      expect(receivedCtx as unknown as ToolContext).toEqual(defaultCtx);
     });
   });
 });
