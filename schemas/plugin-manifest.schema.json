@@ -21,8 +21,55 @@
         "static-scan"
       ]
     },
-    "actions": { "type": "array" },
-    "permissions": { "type": "object" }
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "inputSchema",
+          "outputSchema",
+          "sideEffects"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "inputSchema": { "type": "string" },
+          "outputSchema": { "type": "string" },
+          "sideEffects": {
+            "type": "object",
+            "required": ["network", "writeArtifacts", "external"],
+            "properties": {
+              "network": { "type": "boolean" },
+              "writeArtifacts": { "type": "boolean" },
+              "external": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "required": ["network", "secrets", "writeScopes"],
+      "properties": {
+        "network": {
+          "type": "string",
+          "enum": ["none", "restricted", "open"]
+        },
+        "secrets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "writeScopes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

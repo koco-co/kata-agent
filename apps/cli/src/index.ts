@@ -176,12 +176,22 @@ function requireArtifactRefByPath(
 
 if (!command || command === "help") {
   console.log(
-    "kata-agent commands: test-case-gen, ui-script-gen, workflow status, workflow resume, confirmation import, knowledge suggestions",
+    "kata-agent commands: test-case-gen, ui-script-gen, workflow status, workflow resume, confirmation import, knowledge suggestions, chat",
   );
   process.exit(0);
 }
 
-if (command === "knowledge suggestions") {
+if (command === "chat") {
+  const { startChat } = await import("./chat");
+  startChat({
+    workspaceRoot: argValue("--root") ?? process.cwd(),
+    model: argValue("--model") ?? "deepseek-v4-flash",
+    provider: argValue("--provider") ?? "deepseek",
+    apiKey: process.env.KATA_AGENT_API_KEY,
+  });
+  // Chat runs its own event loop via readline; do not exit.
+  // The process stays alive until the user types /exit.
+} else if (command === "knowledge suggestions") {
   const rootDir = requireArg("--root");
   const project = requireArg("--project");
   console.log(JSON.stringify(listSuggestions({ rootDir, project }), null, 2));

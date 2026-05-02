@@ -48,6 +48,7 @@ export const SCHEMA_REGISTRY = {
   LanhuWritebackDraft: "schemas/lanhu-writeback-draft.schema.json",
   LanhuWritebackResult: "schemas/lanhu-writeback-result.schema.json",
   SourceRepoRef: "schemas/source-repo-ref.schema.json",
+  RuleSet: "schemas/rule-set.schema.json",
   StaticScanInput: "schemas/static-scan-input.schema.json",
   RiskPoint: "schemas/risk-point.schema.json",
   InspectionReport: "schemas/inspection-report.schema.json",

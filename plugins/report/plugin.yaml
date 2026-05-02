@@ -8,13 +8,17 @@ actions:
     inputSchema: RunRecord
     outputSchema: HtmlReport
     sideEffects:
+      network: false
       writeArtifacts: true
+      external: false
   - id: report.generateHtmlReport
     title: 生成 HTML 报告
     inputSchema: RunRecord
     outputSchema: HtmlReport
     sideEffects:
+      network: false
       writeArtifacts: true
+      external: false
 permissions:
   network: none
   secrets: []

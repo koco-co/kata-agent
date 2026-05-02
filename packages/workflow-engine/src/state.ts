@@ -22,7 +22,7 @@ function markNode(
   state: WorkflowRunState,
   nodeId: string,
   status: WorkflowNodeStatus,
-  extra: Record<string, string | boolean> = {},
+  extra: Partial<WorkflowRunState["nodes"][string]> = {},
 ): WorkflowRunState {
   if (!state.nodes[nodeId]) throw new Error(`Unknown workflow node: ${nodeId}`);
   return {
@@ -49,8 +49,10 @@ export function markRunning(
 export function markSucceeded(
   state: WorkflowRunState,
   nodeId: string,
+  artifactRefs: string[] = [],
 ): WorkflowRunState {
-  return evaluateWorkflowStatus(markNode(state, nodeId, "succeeded"));
+  const extra = artifactRefs.length > 0 ? { artifactRefs } : {};
+  return evaluateWorkflowStatus(markNode(state, nodeId, "succeeded", extra));
 }
 
 export function evaluateWorkflowStatus(
@@ -105,4 +107,52 @@ export function markWaiting(
   return evaluateWorkflowStatus(
     markNode(state, nodeId, "waiting", { waitingFor }),
   );
+}
+
+export function markPendingCascade(
+  state: WorkflowRunState,
+  definition: WorkflowDefinition,
+  startNodeId: string,
+): WorkflowRunState {
+  if (!state.nodes[startNodeId]) {
+    throw new Error(`Unknown workflow node: ${startNodeId}`);
+  }
+  const pending = downstreamNodeIds(definition, startNodeId);
+  const nodes = { ...state.nodes };
+  for (const nodeId of pending) {
+    nodes[nodeId] = { status: "pending" };
+  }
+  return evaluateWorkflowStatus({
+    ...state,
+    currentNode: startNodeId,
+    nodes,
+  });
+}
+
+export function findArtifactWriterNode(
+  state: WorkflowRunState,
+  artifactRefId: string,
+): string | undefined {
+  return Object.entries(state.nodes).find(([, node]) =>
+    node.artifactRefs?.includes(artifactRefId),
+  )?.[0];
+}
+
+function downstreamNodeIds(
+  definition: WorkflowDefinition,
+  startNodeId: string,
+): Set<string> {
+  const result = new Set<string>([startNodeId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of definition.nodes) {
+      if (result.has(node.id)) continue;
+      if ((node.dependsOn ?? []).some((dependency) => result.has(dependency))) {
+        result.add(node.id);
+        changed = true;
+      }
+    }
+  }
+  return result;
 }

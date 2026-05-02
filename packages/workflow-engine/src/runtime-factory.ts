@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   AgentRunner,
   MockProvider,
@@ -17,13 +19,18 @@ import type {
   RequirementSpec,
   RunRecord,
   RunPlan,
+  StaticScanInput,
   TestSpec,
 } from "../../domain/src/index";
 import {
   consultKnowledge,
   proposeKnowledge,
 } from "../../knowledge-repo/src/index";
-import { PluginActionRegistry } from "../../plugin-runtime/src/index";
+import {
+  PluginActionRegistry,
+  type PluginManifest,
+} from "../../plugin-runtime/src/index";
+import YAML from "yaml";
 import { fetchLanhuRequirement } from "../../../plugins/lanhu/src/real";
 import { mockFetchRequirement } from "../../../plugins/lanhu/src/mock";
 import { mockWriteLanhuRequirement } from "../../../plugins/lanhu-writeback/src/mock";
@@ -39,6 +46,7 @@ import { generateAllureReport } from "../../../plugins/report/src/allure";
 import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
 import { mockSyncIssueToZentao } from "../../../plugins/zentao/src/mock";
 import { syncIssueToZentao } from "../../../plugins/zentao/src/real";
+import { scanStaticDiff } from "../../../plugins/static-scan/src/scan";
 import { WorkflowExecutor } from "./executor";
 
 export interface RuntimeFactoryOptions {
@@ -246,11 +254,34 @@ function parseTrustedDomains(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function repoRoot(): string {
+  return join(import.meta.dir, "..", "..", "..");
+}
+
+function registerRuntimePluginManifests(actions: PluginActionRegistry): void {
+  for (const plugin of [
+    "lanhu",
+    "xmind",
+    "playwright",
+    "report",
+    "notify",
+    "zentao",
+    "lanhu-writeback",
+    "static-scan",
+  ]) {
+    const manifest = YAML.parse(
+      readFileSync(join(repoRoot(), "plugins", plugin, "plugin.yaml"), "utf8"),
+    ) as PluginManifest;
+    actions.registerManifest(manifest);
+  }
+}
+
 export function createRuntimeServices(options: RuntimeFactoryOptions): {
   executor: WorkflowExecutor;
 } {
   const providers = new ProviderRegistry();
   const actions = new PluginActionRegistry();
+  registerRuntimePluginManifests(actions);
   const config = new LocalConfigLoader({ rootDir: options.rootDir });
   const browserType = options.browserType ?? "chromium";
   const notifyMode = options.notifyMode ?? "mock";
@@ -308,6 +339,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       mockWriteLanhuRequirement(input as LanhuWritebackDraft, {
         dryRun: true,
       }),
+    );
+    actions.register("staticScan.scanDiff", (input) =>
+      scanStaticDiff(input as StaticScanInput),
     );
   } else {
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
@@ -375,6 +409,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
         ),
         dryRun: false,
       }),
+    );
+    actions.register("staticScan.scanDiff", (input) =>
+      scanStaticDiff(input as StaticScanInput),
     );
   }
 

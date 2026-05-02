@@ -2,7 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
-import { LocalConfigLoader } from "../packages/core/src/index";
+import {
+  DEFAULT_HARD_RULES,
+  LocalConfigLoader,
+  loadRuleSet,
+} from "../packages/core/src/index";
 
 const roots: string[] = [];
 
@@ -52,5 +56,74 @@ describe("LocalConfigLoader", () => {
     const loader = new LocalConfigLoader({ rootDir, env: {} });
 
     expect(loader.loadProjectConfig("missing")).toEqual({});
+  });
+
+  test("loads hard rules with run, project, global, default precedence", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    mkdirSync(join(rootDir, "rules"), { recursive: true });
+    mkdirSync(join(rootDir, "projects", "demo"), { recursive: true });
+    writeFileSync(
+      join(rootDir, "rules", "global.json"),
+      JSON.stringify({
+        schemaVersion: "0.1",
+        rules: [
+          {
+            id: "assertions-must-be-concrete",
+            description: "global version",
+            enabled: true,
+          },
+          {
+            id: "custom-rule",
+            description: "global custom",
+            enabled: true,
+          },
+        ],
+      }),
+    );
+    writeFileSync(
+      join(rootDir, "projects", "demo", "rules.json"),
+      JSON.stringify({
+        schemaVersion: "0.1",
+        rules: [
+          {
+            id: "assertions-must-be-concrete",
+            description: "project version",
+            enabled: true,
+          },
+        ],
+      }),
+    );
+
+    const rules = loadRuleSet({
+      rootDir,
+      project: "demo",
+      runRules: [
+        {
+          id: "assertions-must-be-concrete",
+          description: "run version",
+          enabled: false,
+        },
+      ],
+    });
+
+    expect(rules.schemaVersion).toBe("0.1");
+    expect(
+      rules.rules.find((rule) => rule.id === "assertions-must-be-concrete"),
+    ).toMatchObject({
+      description: "run version",
+      enabled: false,
+      source: "run",
+      nonNegotiable: true,
+    });
+    expect(rules.rules.find((rule) => rule.id === "custom-rule")).toMatchObject({
+      description: "global custom",
+      source: "global",
+    });
+    expect(rules.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: DEFAULT_HARD_RULES[0]!.id }),
+      ]),
+    );
   });
 });

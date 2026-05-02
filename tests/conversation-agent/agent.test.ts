@@ -1,0 +1,262 @@
+import { describe, expect, test } from "bun:test";
+import { ConversationAgent } from "../../packages/conversation-agent/src/agent";
+import { buildSystemPrompt } from "../../packages/conversation-agent/src/prompts";
+import type { ConversationTool, ToolsetName } from "../../packages/conversation-agent/src/types";
+import { ALL_TOOLSETS } from "../../packages/conversation-agent/src/types";
+import { randomUUID } from "crypto";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeTool(overrides: Partial<ConversationTool> = {}): ConversationTool {
+  return {
+    name: "test-tool",
+    description: "A test tool",
+    inputSchema: {},
+    permission: "safe",
+    toolset: "files",
+    execute: async () => ({ ok: true, summary: "done" }),
+    ...overrides,
+  };
+}
+
+function makeAgent(
+  overrides: Partial<{
+    sessionDir: string;
+    workspaceRoot: string;
+    tools: ConversationTool[];
+  }> = {},
+): ConversationAgent {
+  const dir = overrides.sessionDir ?? "/tmp/test-sessions";
+  const root = overrides.workspaceRoot ?? "/tmp/test-workspace";
+  const agent = new ConversationAgent({
+    sessionDir: dir,
+    workspaceRoot: root,
+    model: "test-model",
+    provider: "test-provider",
+    apiKey: "test-key",
+  });
+  if (overrides.tools) {
+    for (const t of overrides.tools) {
+      agent.registerTool(t);
+    }
+  }
+  return agent;
+}
+
+// ---------------------------------------------------------------------------
+// ConversationAgent Tests
+// ---------------------------------------------------------------------------
+
+describe("ConversationAgent", () => {
+  // Test 1: Constructor works
+  test("constructor creates agent with default state", () => {
+    const agent = new ConversationAgent({
+      sessionDir: "/tmp/sessions",
+      workspaceRoot: "/tmp/workspace",
+      model: "gpt-4",
+      provider: "openai",
+      apiKey: "sk-test",
+    });
+
+    expect(agent).toBeInstanceOf(ConversationAgent);
+    expect(agent.sessionId).toBeDefined();
+    expect(agent.sessionId.length).toBeGreaterThan(0);
+    expect(agent.yolo).toBe(false);
+    expect(agent.enabledToolsets).toEqual(ALL_TOOLSETS);
+    expect(agent.config.model).toBe("gpt-4");
+    expect(agent.config.provider).toBe("openai");
+  });
+
+  // Test 2: registerTool registers a tool
+  test("registerTool delegates to runtime", () => {
+    const agent = makeAgent();
+    const tool = makeTool({ name: "my-tool" });
+
+    agent.registerTool(tool);
+
+    // Verify via runtime
+    const listed = agent.runtime.listTools();
+    expect(listed).toHaveLength(1);
+    expect(listed[0].name).toBe("my-tool");
+  });
+
+  // Test 3: handleSlashCommand("/help") returns help text
+  test('handleSlashCommand("/help") returns help text containing "Available Tools"', () => {
+    const agent = makeAgent({
+      tools: [makeTool({ name: "read-file", toolset: "files" })],
+    });
+
+    const result = agent.handleSlashCommand("/help");
+
+    expect(result).toContain("Available Tools");
+  });
+
+  // Test 4: handleSlashCommand("/status") returns session info
+  test('handleSlashCommand("/status") returns session info containing session ID', () => {
+    const agent = makeAgent();
+
+    const result = agent.handleSlashCommand("/status");
+
+    expect(result).toContain(agent.sessionId);
+    expect(result).toContain("Session");
+  });
+
+  // Test 5: handleSlashCommand("/yolo") toggles yolo
+  test('handleSlashCommand("/yolo") toggles yolo mode', () => {
+    const agent = makeAgent();
+    expect(agent.yolo).toBe(false);
+
+    const result1 = agent.handleSlashCommand("/yolo");
+    expect(agent.yolo).toBe(true);
+    expect(result1).toContain("enabled");
+
+    const result2 = agent.handleSlashCommand("/yolo");
+    expect(agent.yolo).toBe(false);
+    expect(result2).toContain("disabled");
+  });
+
+  // Test 6: handleSlashCommand("/new") creates new session
+  test('handleSlashCommand("/new") creates a new session', () => {
+    const agent = makeAgent();
+    const originalId = agent.sessionId;
+
+    const result = agent.handleSlashCommand("/new");
+
+    expect(agent.sessionId).not.toBe(originalId);
+    expect(agent.yolo).toBe(false);
+    expect(result).toContain("New session");
+  });
+
+  // Test 7: handleSlashCommand unknown command
+  test('handleSlashCommand("/unknown") returns error message', () => {
+    const agent = makeAgent();
+
+    const result = agent.handleSlashCommand("/unknown");
+
+    expect(result).toContain("Unknown command");
+  });
+
+  // Test 8: handleSlashCommand("/exit") returns goodbye
+  test('handleSlashCommand("/exit") returns goodbye', () => {
+    const agent = makeAgent();
+
+    const result = agent.handleSlashCommand("/exit");
+
+    expect(result).toContain("Goodbye");
+  });
+
+  // Test 9: handleSlashCommand("/tools") lists toolsets and tools
+  test('handleSlashCommand("/tools") lists enabled toolsets and tools', () => {
+    const agent = makeAgent({
+      tools: [
+        makeTool({ name: "read-file", toolset: "files" }),
+        makeTool({ name: "write-file", toolset: "files" }),
+        makeTool({ name: "exec", toolset: "shell" }),
+      ],
+    });
+
+    const result = agent.handleSlashCommand("/tools");
+
+    expect(result).toContain("files");
+    expect(result).toContain("shell");
+    expect(result).toContain("read-file");
+    expect(result).toContain("write-file");
+    expect(result).toContain("exec");
+  });
+
+  // Test 10: processUserMessage processes message and returns response
+  test("processUserMessage handles a simple message", async () => {
+    const agent = makeAgent({
+      tools: [makeTool({ name: "read-file", toolset: "files" })],
+    });
+
+    const result = await agent.processUserMessage("Hello, I need help");
+
+    expect(result).toBeDefined();
+    expect(result.finalResponse).toBeDefined();
+    expect(result.finalResponse.length).toBeGreaterThan(0);
+    expect(result.messages).toBeDefined();
+  });
+
+  // Test 11: SecretRedactor is applied to user messages
+  test("SecretRedactor redacts secrets in user messages before storage", async () => {
+    const agent = makeAgent();
+
+    const result = await agent.processUserMessage("My API key is sk-abc123def456ghijklmno");
+
+    // The redactor should have redacted the API key somewhere in the process
+    // The response should NOT contain the raw API key
+    expect(result.finalResponse).not.toContain("sk-abc123def456ghijklmno");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildSystemPrompt Tests
+// ---------------------------------------------------------------------------
+
+describe("buildSystemPrompt", () => {
+  test("returns a string with tool listings", () => {
+    const tools: ConversationTool[] = [
+      makeTool({ name: "read-file", description: "Read a file", toolset: "files", permission: "safe" }),
+      makeTool({ name: "write-file", description: "Write to a file", toolset: "files", permission: "workspace-write" }),
+    ];
+
+    const prompt = buildSystemPrompt(tools, ["files"]);
+
+    expect(prompt).toContain("read-file");
+    expect(prompt).toContain("Write to a file");
+    expect(prompt).toContain("workspace-write");
+    expect(prompt).toContain("Available Tools");
+  });
+
+  test("filters tools by enabledToolsets", () => {
+    const tools: ConversationTool[] = [
+      makeTool({ name: "file-read", toolset: "files" }),
+      makeTool({ name: "shell-exec", toolset: "shell" }),
+      makeTool({ name: "artifact-upload", toolset: "artifacts" }),
+    ];
+
+    // Only enable files and shell
+    const prompt = buildSystemPrompt(tools, ["files", "shell"]);
+
+    expect(prompt).toContain("file-read");
+    expect(prompt).toContain("shell-exec");
+    expect(prompt).not.toContain("artifact-upload");
+  });
+
+  test("includes intent context when provided", () => {
+    const tools: ConversationTool[] = [makeTool({ name: "read-file", toolset: "files" })];
+    const intentContext = "Detected workflow: test-case-gen, project: my-app";
+
+    const prompt = buildSystemPrompt(tools, ["files"], intentContext);
+
+    expect(prompt).toContain(intentContext);
+    expect(prompt).toContain("Intent Context");
+  });
+
+  test("includes slash command documentation", () => {
+    const tools: ConversationTool[] = [makeTool({ name: "read-file", toolset: "files" })];
+
+    const prompt = buildSystemPrompt(tools, ["files"]);
+
+    expect(prompt).toContain("/help");
+    expect(prompt).toContain("/status");
+    expect(prompt).toContain("/new");
+    expect(prompt).toContain("/tools");
+    expect(prompt).toContain("/yolo");
+    expect(prompt).toContain("/exit");
+  });
+
+  test("includes tool usage rules", () => {
+    const tools: ConversationTool[] = [
+      makeTool({ name: "read-file", toolset: "files", permission: "safe" }),
+    ];
+
+    const prompt = buildSystemPrompt(tools, ["files"]);
+
+    expect(prompt).toContain("Tool Usage Rules");
+    expect(prompt).toContain("safe");
+  });
+});

@@ -1,0 +1,10 @@
+id: static-scan
+version: 0.3.0
+skill: static-scan
+nodes:
+  - id: create-feature-workspace
+    type: artifact
+  - id: static-scan
+    type: tool
+    action: staticScan.scanDiff
+    dependsOn: [create-feature-workspace]

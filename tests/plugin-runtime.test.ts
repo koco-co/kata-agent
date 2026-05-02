@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  PluginActionRegistry,
   PluginRegistry,
   validatePluginManifest,
   type PluginManifest,
@@ -19,6 +20,11 @@ describe("plugin runtime", () => {
           title: "拉取蓝湖需求",
           inputSchema: "LanhuFetchInput",
           outputSchema: "RequirementSourceBundle",
+          sideEffects: {
+            network: true,
+            writeArtifacts: true,
+            external: false,
+          },
         },
       ],
       permissions: {
@@ -41,8 +47,13 @@ describe("plugin runtime", () => {
         {
           id: "bad.notify",
           title: "bad",
-          inputSchema: "Anything",
+          inputSchema: "LanhuFetchInput",
           outputSchema: "NotificationResult",
+          sideEffects: {
+            network: false,
+            writeArtifacts: false,
+            external: false,
+          },
         },
       ],
       permissions: { network: "open", secrets: [], writeScopes: [] },
@@ -64,6 +75,11 @@ describe("plugin runtime", () => {
           title: "bad",
           inputSchema: "TestSpec",
           outputSchema: "TestSpec",
+          sideEffects: {
+            network: false,
+            writeArtifacts: true,
+            external: false,
+          },
         },
       ],
       permissions: {
@@ -89,6 +105,11 @@ describe("plugin runtime", () => {
           title: "Sync IssueDraft to Zentao",
           inputSchema: "IssueDraft",
           outputSchema: "IssueSyncResult",
+          sideEffects: {
+            network: true,
+            writeArtifacts: false,
+            external: true,
+          },
         },
       ],
       permissions: {
@@ -112,6 +133,11 @@ describe("plugin runtime", () => {
           title: "Write requirement summary back to Lanhu",
           inputSchema: "LanhuWritebackDraft",
           outputSchema: "LanhuWritebackResult",
+          sideEffects: {
+            network: true,
+            writeArtifacts: false,
+            external: true,
+          },
         },
       ],
       permissions: {
@@ -135,6 +161,11 @@ describe("plugin runtime", () => {
           title: "Scan diff risks",
           inputSchema: "StaticScanInput",
           outputSchema: "InspectionReport",
+          sideEffects: {
+            network: false,
+            writeArtifacts: false,
+            external: false,
+          },
         },
       ],
       permissions: {
@@ -158,6 +189,11 @@ describe("plugin runtime", () => {
           title: "Bad issue creation",
           inputSchema: "StaticScanInput",
           outputSchema: "IssueDraft",
+          sideEffects: {
+            network: false,
+            writeArtifacts: false,
+            external: false,
+          },
         },
       ],
       permissions: {
@@ -169,5 +205,142 @@ describe("plugin runtime", () => {
     expect(() => validatePluginManifest(manifest)).toThrow(
       "static-scan action outputSchema is not allowed",
     );
+  });
+
+  test("rejects network side effects when manifest denies network", () => {
+    const manifest: PluginManifest = {
+      name: "bad-network",
+      title: "Bad Network",
+      version: "0.1.0",
+      type: "notification",
+      actions: [
+        {
+          id: "notify.sendNotification",
+          title: "Notify",
+          inputSchema: "NotificationRequest",
+          outputSchema: "NotificationResult",
+          sideEffects: {
+            network: true,
+            writeArtifacts: false,
+            external: true,
+          },
+        },
+      ],
+      permissions: {
+        network: "none",
+        secrets: [],
+        writeScopes: [],
+      },
+    };
+    expect(() => validatePluginManifest(manifest)).toThrow(
+      "declares network side effect but plugin network permission is none",
+    );
+  });
+
+  test("validates action input and output against manifest schemas", async () => {
+    const manifest: PluginManifest = {
+      name: "lanhu",
+      title: "蓝湖需求源",
+      version: "0.1.0",
+      type: "requirement-source",
+      actions: [
+        {
+          id: "lanhu.fetchRequirement",
+          title: "拉取蓝湖需求",
+          inputSchema: "LanhuFetchInput",
+          outputSchema: "RequirementSourceBundle",
+          sideEffects: {
+            network: false,
+            writeArtifacts: true,
+            external: false,
+          },
+        },
+      ],
+      permissions: {
+        network: "none",
+        secrets: [],
+        writeScopes: ["feature.sources"],
+      },
+    };
+    const registry = new PluginActionRegistry();
+    registry.registerManifest(manifest);
+    registry.register("lanhu.fetchRequirement", () => ({
+      schemaVersion: "0.1",
+      sourceType: "lanhu",
+      sourceUrl: "mock://poor-prd",
+      title: "规则配置",
+      textBlocks: [{ id: "SRC-001", content: "保存按钮" }],
+      images: [],
+      rawFiles: [],
+      fetchedAt: "2026-05-02T00:00:00.000Z",
+    }));
+
+    await expect(
+      registry.execute("lanhu.fetchRequirement", { url: "mock://poor-prd" }, {
+        rootDir: "/tmp",
+        project: "demo",
+        feature: "rule-config",
+      }),
+    ).rejects.toThrow("SCHEMA_VALIDATION_FAILED LanhuFetchInput");
+
+    await expect(
+      registry.execute(
+        "lanhu.fetchRequirement",
+        { url: "mock://poor-prd", outputDir: "sources/lanhu" },
+        {
+          rootDir: "/tmp",
+          project: "demo",
+          feature: "rule-config",
+        },
+      ),
+    ).resolves.toMatchObject({ schemaVersion: "0.1" });
+  });
+
+  test("rejects invalid action output", async () => {
+    const manifest: PluginManifest = {
+      name: "static-scan",
+      title: "Static Scan",
+      version: "0.1.0",
+      type: "static-scan",
+      actions: [
+        {
+          id: "staticScan.scanDiff",
+          title: "Scan diff risks",
+          inputSchema: "StaticScanInput",
+          outputSchema: "InspectionReport",
+          sideEffects: {
+            network: false,
+            writeArtifacts: false,
+            external: false,
+          },
+        },
+      ],
+      permissions: {
+        network: "none",
+        secrets: [],
+        writeScopes: ["feature.reports"],
+      },
+    };
+    const registry = new PluginActionRegistry();
+    registry.registerManifest(manifest);
+    registry.register("staticScan.scanDiff", () => ({ schemaVersion: "0.1" }));
+
+    await expect(
+      registry.execute(
+        "staticScan.scanDiff",
+        {
+          schemaVersion: "0.1",
+          project: "demo",
+          feature: "rule-config",
+          sourceRepoRef: "SourceRepoRef:1",
+          diffText: "diff --git a/app.ts b/app.ts\n+console.log('x')\n",
+        },
+        {
+          rootDir: "/tmp",
+          project: "demo",
+          feature: "rule-config",
+        },
+      ),
+    ).rejects.toThrow("SCHEMA_VALIDATION_FAILED InspectionReport");
   });
 });

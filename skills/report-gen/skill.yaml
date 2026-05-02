@@ -3,7 +3,6 @@ title: 日常测试报告生成
 version: 0.3.0
 description: 从运行记录、证据包和审查报告生成 bug、冲突和自动化失败报告。
 workflow: report-gen
-status: interface-only
 inputs:
   schema: ReportGenInput
 outputs:

@@ -9,6 +9,7 @@ import {
   markBlocked,
   markFailed,
   markRunning,
+  markPendingCascade,
   markSucceeded,
   markWaiting,
   saveWorkflowState,
@@ -96,6 +97,33 @@ describe("workflow persistence", () => {
     );
     expect(resumed.status).toBe("running");
     expect(blocked.status).toBe("blocked");
+  });
+
+  test("resets a succeeded node and downstream dependents to pending", () => {
+    const definition: WorkflowDefinition = {
+      id: "test-case-gen",
+      version: "0.1.0",
+      skill: "test-case-gen",
+      nodes: [
+        { id: "source", type: "tool" },
+        { id: "normalize", type: "agent", dependsOn: ["source"] },
+        { id: "report", type: "artifact", dependsOn: ["normalize"] },
+      ],
+    };
+    let state = createRunState(definition, "run-cascade");
+    state = markSucceeded(state, "source", ["RequirementSourceBundle:1"]);
+    state = markSucceeded(state, "normalize", ["RequirementDraft:1"]);
+    state = markSucceeded(state, "report", ["DesignReport:1"]);
+
+    const reset = markPendingCascade(state, definition, "normalize");
+
+    expect(reset.status).toBe("running");
+    expect(reset.nodes.source).toEqual({
+      status: "succeeded",
+      artifactRefs: ["RequirementSourceBundle:1"],
+    });
+    expect(reset.nodes.normalize).toEqual({ status: "pending" });
+    expect(reset.nodes.report).toEqual({ status: "pending" });
   });
 
   test("appends trace events for a run", () => {

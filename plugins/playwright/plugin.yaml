@@ -8,6 +8,7 @@ actions:
     inputSchema: RunPlan
     outputSchema: RunRecord
     sideEffects:
+      network: false
       writeArtifacts: true
       external: true
   - id: playwright.runPlan.real
@@ -15,8 +16,9 @@ actions:
     inputSchema: RunPlan
     outputSchema: RunRecord
     sideEffects:
-      - network
-      - artifact-write
+      network: true
+      writeArtifacts: true
+      external: true
 permissions:
   network: restricted
   secrets: []

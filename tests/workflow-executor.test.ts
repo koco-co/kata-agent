@@ -270,6 +270,72 @@ describe("workflow executor", () => {
     expect(readFileSync(join(dir, "traces", "run-1.jsonl"), "utf8")).toContain(
       '"nodeId":"await-confirmation-result"',
     );
+    const trace = readFileSync(join(dir, "traces", "run-1.jsonl"), "utf8");
+    expect(trace).toContain('"type":"plugin-action"');
+    expect(trace).toContain('"actionId":"lanhu.fetchRequirement"');
+    expect(trace).toContain('"type":"agent-call"');
+    expect(trace).toContain('"type":"provider-call"');
+    expect(trace).toContain('"type":"artifact-write"');
+    expect(trace).toContain('"type":"knowledge-consult"');
+  });
+
+  test("traces knowledge proposal events", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    writeJsonArtifact(
+      location,
+      "RequirementSpec",
+      "requirement/spec/requirement-spec.json",
+      {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rule-config",
+        title: "规则配置",
+        status: "confirmed",
+        rules: [
+          {
+            id: "REQ-001",
+            text: "保存成功后展示成功提示。",
+            severity: "P0",
+            sourceType: "confirmation",
+            sourceRefs: ["SRC-001"],
+            confirmationQuestionId: "GAP-001",
+          },
+        ],
+        pageContracts: [],
+        openItems: [],
+        assumptions: [],
+      },
+      "test",
+      { allowedScopes: ["feature.requirement.spec"] },
+    );
+    const actions = new PluginActionRegistry();
+    actions.register("knowledge.propose", () => []);
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+    const workflow: WorkflowDefinition = {
+      id: "knowledge-propose-only",
+      version: "0.1",
+      skill: "test-case-gen",
+      nodes: [{ id: "propose-knowledge", type: "tool" }],
+    };
+
+    const result = await executor.start({
+      location,
+      definition: workflow,
+      runId: "run-knowledge-propose",
+    });
+
+    expect(result.state.status).toBe("succeeded");
+    const trace = readFileSync(
+      join(featureDir(location), "traces", "run-knowledge-propose.jsonl"),
+      "utf8",
+    );
+    expect(trace).toContain('"type":"knowledge-propose"');
   });
 
   test("marks dispatch error failed and saves state", async () => {
@@ -310,6 +376,133 @@ describe("workflow executor", () => {
     expect(readFileSync(join(dir, "traces", "run-transient.jsonl"), "utf8")).toContain(
       '"message":"PLUGIN_NETWORK_TRANSIENT 503"',
     );
+  });
+
+  test("reruns retryable failed nodes on resume", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    let calls = 0;
+    const actions = new PluginActionRegistry();
+    actions.register("lanhu.fetchRequirement", () => {
+      calls += 1;
+      if (calls === 1) throw new Error("PLUGIN_NETWORK_TRANSIENT 503");
+      return {
+        schemaVersion: "0.1",
+        sourceType: "lanhu",
+        sourceUrl: "mock://poor-prd",
+        title: "规则配置",
+        textBlocks: [{ id: "SRC-001", content: "保存按钮" }],
+        images: [],
+        rawFiles: [
+          {
+            id: "RAW-001",
+            path: "sources/lanhu/raw.html",
+            mediaType: "text/html",
+            hash: "sha256:test",
+          },
+        ],
+        fetchedAt: "2026-05-02T00:00:00.000Z",
+      };
+    });
+    const workflow: WorkflowDefinition = {
+      id: "retry-source",
+      version: "0.1",
+      skill: "test-case-gen",
+      nodes: [
+        {
+          id: "ingest-requirement-source",
+          type: "tool",
+          action: "lanhu.fetchRequirement",
+        },
+      ],
+    };
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const failed = await executor.start({
+      location,
+      definition: workflow,
+      runId: "run-retry-source",
+    });
+    const resumed = await executor.resume({
+      location,
+      definition: workflow,
+      runId: "run-retry-source",
+    });
+
+    expect(failed.state.status).toBe("failed");
+    expect(failed.state.nodes["ingest-requirement-source"].retryable).toBe(true);
+    expect(resumed.state.status).toBe("succeeded");
+    expect(calls).toBe(2);
+  });
+
+  test("does not rerun fatal failed nodes on resume", async () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
+    roots.push(rootDir);
+    const location = { rootDir, project: "demo", feature: "rule-config" };
+    let calls = 0;
+    const actions = new PluginActionRegistry();
+    actions.register("lanhu.fetchRequirement", () => {
+      calls += 1;
+      if (calls === 1) throw new Error("MISSING_SECRET lanhu cookie");
+      return {
+        schemaVersion: "0.1",
+        sourceType: "lanhu",
+        sourceUrl: "mock://poor-prd",
+        title: "规则配置",
+        textBlocks: [{ id: "SRC-001", content: "保存按钮" }],
+        images: [],
+        rawFiles: [
+          {
+            id: "RAW-001",
+            path: "sources/lanhu/raw.html",
+            mediaType: "text/html",
+            hash: "sha256:test",
+          },
+        ],
+        fetchedAt: "2026-05-02T00:00:00.000Z",
+      };
+    });
+    const workflow: WorkflowDefinition = {
+      id: "fatal-source",
+      version: "0.1",
+      skill: "test-case-gen",
+      nodes: [
+        {
+          id: "ingest-requirement-source",
+          type: "tool",
+          action: "lanhu.fetchRequirement",
+        },
+      ],
+    };
+    const executor = new WorkflowExecutor({
+      agentRunner: new AgentRunner(new ProviderRegistry()),
+      actions,
+      agents: new Map(),
+    });
+
+    const failed = await executor.start({
+      location,
+      definition: workflow,
+      runId: "run-fatal-source",
+    });
+    const resumed = await executor.resume({
+      location,
+      definition: workflow,
+      runId: "run-fatal-source",
+    });
+
+    expect(failed.state.status).toBe("failed");
+    expect(failed.state.nodes["ingest-requirement-source"].retryable).toBe(false);
+    expect(resumed.state.status).toBe("failed");
+    expect(resumed.state.nodes["ingest-requirement-source"].error).toBe(
+      "MISSING_SECRET lanhu cookie",
+    );
+    expect(calls).toBe(1);
   });
 
   test("blocks unusable requirement sources before agent normalization", async () => {
@@ -524,41 +717,53 @@ describe("workflow executor", () => {
     ]);
   });
 
-  test("fails resume when an indexed artifact hash no longer matches", async () => {
+  test("invalidates the artifact writer and downstream nodes when an indexed artifact hash no longer matches", async () => {
     const rootDir = mkdtempSync(join(tmpdir(), "kata-agent-"));
     roots.push(rootDir);
     const location = { rootDir, project: "demo", feature: "rule-config" };
-    const dir = createFeatureWorkspace(location);
     const runId = "run-hash-mismatch";
     writeTestSpec(location);
-    writeFileSync(
-      artifactPath(location, "test-spec/test-spec.json"),
-      '{"tampered":true}\n',
-    );
-    const workflow: WorkflowDefinition = {
-      id: "hash-guard",
-      version: "0.1",
-      skill: "test-case-gen",
-      nodes: [{ id: "write-design-report", type: "artifact" }],
-    };
-    saveWorkflowState(dir, createRunState(workflow, runId));
-
+    let exports = 0;
+    const actions = new PluginActionRegistry();
+    actions.register("xmind.export", () => {
+      exports += 1;
+      return {
+        schemaVersion: "0.1",
+        outputPath: "exports/xmind/test-spec.xmind",
+        caseCount: 1,
+      } satisfies XMindExport;
+    });
     const executor = new WorkflowExecutor({
       agentRunner: new AgentRunner(new ProviderRegistry()),
-      actions: new PluginActionRegistry(),
+      actions,
       agents: new Map(),
     });
+    const first = await executor.start({
+      location,
+      definition: xmindWithConsistencyWorkflow,
+      runId,
+    });
+    expect(first.state.status).toBe("succeeded");
+
+    writeFileSync(
+      artifactPath(location, "exports/xmind/xmind-export.json"),
+      '{"tampered":true}\n',
+    );
 
     const result = await executor.resume({
       location,
-      definition: workflow,
+      definition: xmindWithConsistencyWorkflow,
       runId,
     });
 
-    expect(result.state.status).toBe("failed");
-    expect(result.state.nodes["write-design-report"].status).toBe("failed");
-    expect(result.state.nodes["write-design-report"].error).toContain(
-      "Artifact hash mismatch: test-spec/test-spec.json",
+    expect(result.state.status).toBe("succeeded");
+    expect(exports).toBe(2);
+    expect(result.state.nodes["export-xmind"]).toEqual({
+      status: "succeeded",
+      artifactRefs: expect.any(Array),
+    });
+    expect(result.state.nodes["gate-artifact-consistency"].status).toBe(
+      "succeeded",
     );
   });
 });

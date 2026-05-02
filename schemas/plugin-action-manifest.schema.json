@@ -7,7 +7,8 @@
     "id",
     "title",
     "inputSchema",
-    "outputSchema"
+    "outputSchema",
+    "sideEffects"
   ],
   "properties": {
     "id": {
@@ -21,7 +22,17 @@
     },
     "outputSchema": {
       "type": "string"
+    },
+    "sideEffects": {
+      "type": "object",
+      "required": ["network", "writeArtifacts", "external"],
+      "properties": {
+        "network": { "type": "boolean" },
+        "writeArtifacts": { "type": "boolean" },
+        "external": { "type": "boolean" }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

@@ -46,6 +46,7 @@ export interface WorkflowRunState {
       error?: string;
       retryable?: boolean;
       waitingFor?: string;
+      artifactRefs?: string[];
     }
   >;
 }

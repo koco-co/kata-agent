@@ -1,0 +1,9 @@
+id: report-gen
+version: 0.3.0
+skill: report-gen
+nodes:
+  - id: create-feature-workspace
+    type: artifact
+  - id: generate-reports
+    type: artifact
+    dependsOn: [create-feature-workspace]

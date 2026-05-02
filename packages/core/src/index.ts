@@ -7,6 +7,14 @@ export {
 } from "./error-code";
 export type { ConfigLoader } from "./config";
 export { LocalConfigLoader, type LocalConfigLoaderOptions } from "./config-loader";
+export {
+  DEFAULT_HARD_RULES,
+  loadRuleSet,
+  type HardRule,
+  type HardRuleSource,
+  type LoadRuleSetOptions,
+  type RuleSet,
+} from "./rule-store";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =

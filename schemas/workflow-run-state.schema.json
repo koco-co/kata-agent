@@ -24,7 +24,11 @@
           },
           "error": { "type": "string" },
           "retryable": { "type": "boolean" },
-          "waitingFor": { "type": "string" }
+          "waitingFor": { "type": "string" },
+          "artifactRefs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
         },
         "additionalProperties": false
       }

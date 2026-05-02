@@ -12,10 +12,12 @@ export {
   evaluateWorkflowStatus,
   markBlocked,
   markFailed,
+  markPendingCascade,
   markReady,
   markRunning,
   markSucceeded,
   markWaiting,
+  findArtifactWriterNode,
 } from "./state";
 export {
   loadWorkflowState,
@@ -33,6 +35,7 @@ export {
   checkArtifactConsistency,
   checkEvidenceBinding,
   checkRequirementClarity,
+  checkRuleStoreCompliance,
   checkSourceIntegrity,
   checkTestSpecValidity,
 } from "./gates";

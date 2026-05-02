@@ -1,3 +1,4 @@
+
 # kata-agent Architecture Design
 
 > **Status**: Draft for external review

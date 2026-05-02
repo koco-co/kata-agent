@@ -14,10 +14,10 @@ export interface PluginActionManifest {
   title: string;
   inputSchema: string;
   outputSchema: string;
-  sideEffects?: {
-    network?: boolean;
-    writeArtifacts?: boolean;
-    external?: boolean;
+  sideEffects: {
+    network: boolean;
+    writeArtifacts: boolean;
+    external: boolean;
   };
 }
 

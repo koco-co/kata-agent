@@ -132,6 +132,20 @@ describe("manifest schema references", () => {
     }
   });
 
+  test("v0.3 daily QA skills are workflow-backed", () => {
+    for (const skill of ["static-scan", "report-gen", "hotfix-case-gen"]) {
+      const manifest = YAML.parse(
+        readFileSync(join("skills", skill, "skill.yaml"), "utf8"),
+      ) as { status?: string; workflow: string };
+      expect(manifest.status, `skills/${skill}/skill.yaml`).not.toBe(
+        "interface-only",
+      );
+      expect(existsSync(join("workflows", `${manifest.workflow}.yaml`))).toBe(
+        true,
+      );
+    }
+  });
+
   test("workflow node references are resolvable", () => {
     const agentNames = new Set(
       yamlFiles("agents").map(

@@ -9,6 +9,7 @@ actions:
     outputSchema: IssueSyncResult
     sideEffects:
       network: true
+      writeArtifacts: false
       external: true
 permissions:
   network: restricted

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import type { HardRule } from "../../core/src/index";
 import type {
   ConfirmationResult,
   RequirementGapReport,
@@ -20,8 +22,25 @@ export interface GateResult {
   violations: GateViolation[];
 }
 
+export interface SourceIntegrityContext {
+  rawFileContents?: Record<string, string | Uint8Array>;
+}
+
+export interface MarkdownConsistencyArtifact {
+  id: string;
+  path: string;
+  expected: string;
+  actual: string;
+}
+
+export interface ArtifactConsistencyContext {
+  markdownArtifacts?: MarkdownConsistencyArtifact[];
+  hashViolations?: GateViolation[];
+}
+
 export function checkSourceIntegrity(
   source: RequirementSourceBundle,
+  context: SourceIntegrityContext = {},
 ): GateResult {
   const violations: GateViolation[] = [];
   if (!source.title?.trim()) {
@@ -47,6 +66,18 @@ export function checkSourceIntegrity(
       message: "Requirement source must reference raw source files",
     });
   }
+  for (const rawFile of source.rawFiles) {
+    const content = context.rawFileContents?.[rawFile.path];
+    if (content === undefined) continue;
+    const actual = sha256(content);
+    if (actual !== rawFile.hash) {
+      violations.push({
+        id: rawFile.id,
+        severity: "error",
+        message: `Raw source file hash mismatch: ${rawFile.path}`,
+      });
+    }
+  }
   return {
     gateId: "source-integrity",
     passed: violations.length === 0,
@@ -57,20 +88,49 @@ export function checkSourceIntegrity(
 export function checkRequirementClarity(
   gaps: RequirementGapReport,
   confirmation: ConfirmationResult,
+  requirement?: RequirementSpec,
 ): GateResult {
-  const answered = new Set(
+  const confirmed = new Set(
     confirmation.answers
       .filter((answer) => answer.status === "confirmed")
       .map((answer) => answer.questionId),
   );
-  const violations = gaps.gaps
-    .filter((gap) => gap.severity === "P0" && !answered.has(gap.id))
-    .map((gap) => ({
-      id: gap.id,
-      severity: "error" as const,
-      message: `Unresolved P0 gap: ${gap.question}`,
-    }));
-  return { passed: violations.length === 0, violations };
+  const assumed = new Set(
+    confirmation.answers
+      .filter((answer) => answer.status === "assumed")
+      .map((answer) => answer.questionId),
+  );
+  const openItems = new Set(
+    requirement?.openItems
+      .filter((item) => item.status !== "confirmed")
+      .map((item) => item.id) ?? [],
+  );
+  const violations: GateViolation[] = [];
+  for (const gap of gaps.gaps) {
+    if (gap.severity === "P0" && !confirmed.has(gap.id)) {
+      violations.push({
+        id: gap.id,
+        severity: "error",
+        message: `Unresolved P0 gap: ${gap.question}`,
+      });
+    }
+    if (
+      gap.severity === "P1" &&
+      !confirmed.has(gap.id) &&
+      !assumed.has(gap.id) &&
+      !openItems.has(gap.id)
+    ) {
+      violations.push({
+        id: gap.id,
+        severity: "warning",
+        message: `Unresolved P1 gap: ${gap.question}`,
+      });
+    }
+  }
+  return {
+    passed: violations.every((violation) => violation.severity !== "error"),
+    violations,
+  };
 }
 
 export function checkEvidenceBinding(requirement: RequirementSpec): GateResult {
@@ -197,6 +257,52 @@ export function checkAutomationReadiness(
       if (
         (testCase.priority === "P0" || testCase.priority === "P1") &&
         testCase.automation.readiness === "ready" &&
+        testCase.steps.length === 0
+      ) {
+        violations.push({
+          id: `${testCase.id}:entry`,
+          severity: "error",
+          message: "Ready P0/P1 case must include an executable entry/action step",
+        });
+      }
+      for (const step of testCase.steps) {
+        if (testCase.automation.readiness === "ready" && !step.action.trim()) {
+          violations.push({
+            id: `${testCase.id}:step-action`,
+            severity: "error",
+            message: "Ready automation step must include an action target",
+          });
+        }
+        if (testCase.automation.readiness === "ready" && !step.expected.trim()) {
+          violations.push({
+            id: `${testCase.id}:step-expected`,
+            severity: "error",
+            message: "Ready automation step must include expected result",
+          });
+        }
+      }
+      for (const assertion of testCase.assertions) {
+        if (testCase.automation.readiness === "ready" && !assertion.target.trim()) {
+          violations.push({
+            id: `${assertion.id}:target`,
+            severity: "error",
+            message: "Ready automation assertion must include a target",
+          });
+        }
+        if (
+          testCase.automation.readiness === "ready" &&
+          !assertion.expected.trim()
+        ) {
+          violations.push({
+            id: `${assertion.id}:expected`,
+            severity: "error",
+            message: "Ready automation assertion must include expected result",
+          });
+        }
+      }
+      if (
+        (testCase.priority === "P0" || testCase.priority === "P1") &&
+        testCase.automation.readiness === "ready" &&
         !testCase.automation.uiContractRefs.some((ref) =>
           pageContractIds.has(ref),
         )
@@ -205,6 +311,16 @@ export function checkAutomationReadiness(
           id: testCase.id,
           severity: "error",
           message: "Ready P0/P1 case must reference a UI contract",
+        });
+      }
+      if (
+        testCase.automation.readiness === "blocked" &&
+        testCase.automation.blockers.length === 0
+      ) {
+        violations.push({
+          id: `${testCase.id}:blocker`,
+          severity: "error",
+          message: "Blocked automation case must include blocker reason",
         });
       }
     }
@@ -222,13 +338,16 @@ export function checkAutomationScriptReadiness(spec: TestSpec): GateResult {
 export function checkArtifactConsistency(
   spec: TestSpec,
   xmind: XMindExport,
-  artifactViolations: GateViolation[] = [],
+  context: ArtifactConsistencyContext | GateViolation[] = {},
 ): GateResult {
   const testSpecCaseCount = spec.modules.reduce(
     (count, module) => count + module.cases.length,
     0,
   );
-  const violations: GateViolation[] = [...artifactViolations];
+  const artifactViolations = Array.isArray(context)
+    ? context
+    : (context.hashViolations ?? []);
+  const violations: GateViolation[] = [];
   if (xmind.caseCount !== testSpecCaseCount) {
     violations.push({
       id: "xmind-case-count",
@@ -236,9 +355,38 @@ export function checkArtifactConsistency(
       message: `XMind case count ${xmind.caseCount} does not match TestSpec case count ${testSpecCaseCount}`,
     });
   }
+  if (!Array.isArray(context)) {
+    for (const markdown of context.markdownArtifacts ?? []) {
+      if (markdown.actual !== markdown.expected) {
+        violations.push({
+          id: markdown.id,
+          severity: "error",
+          message: `Markdown artifact is stale: ${markdown.path}`,
+        });
+      }
+    }
+  }
+  violations.push(...artifactViolations);
   return {
     gateId: "artifact-consistency",
     passed: violations.every((violation) => violation.severity !== "error"),
+    violations,
+  };
+}
+
+export function checkRuleStoreCompliance(rules: HardRule[]): GateResult {
+  const violations = rules
+    .filter((rule) => rule.nonNegotiable && !rule.enabled)
+    .map(
+      (rule): GateViolation => ({
+        id: rule.id,
+        severity: "error",
+        message: `Non-negotiable hard rule is disabled: ${rule.description}`,
+      }),
+    );
+  return {
+    gateId: "rule-store-compliance",
+    passed: violations.length === 0,
     violations,
   };
 }
@@ -265,4 +413,12 @@ export const GATE_REGISTRY = {
     id: "artifact-consistency",
     checks: [checkArtifactConsistency],
   },
+  "rule-store-compliance": {
+    id: "rule-store-compliance",
+    checks: [checkRuleStoreCompliance],
+  },
 } as const;
+
+function sha256(content: string | Uint8Array): string {
+  return `sha256:${createHash("sha256").update(content).digest("hex")}`;
+}

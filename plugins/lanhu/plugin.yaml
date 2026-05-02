@@ -10,6 +10,7 @@ actions:
     sideEffects:
       network: true
       writeArtifacts: true
+      external: false
 permissions:
   network: restricted
   secrets:

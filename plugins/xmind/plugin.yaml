@@ -8,7 +8,9 @@ actions:
     inputSchema: TestSpec
     outputSchema: XMindExport
     sideEffects:
+      network: false
       writeArtifacts: true
+      external: false
 permissions:
   network: none
   secrets: []

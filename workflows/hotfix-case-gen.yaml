@@ -1,0 +1,9 @@
+id: hotfix-case-gen
+version: 0.3.0
+skill: hotfix-case-gen
+nodes:
+  - id: create-feature-workspace
+    type: artifact
+  - id: generate-hotfix-test-spec
+    type: artifact
+    dependsOn: [create-feature-workspace]

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/rule-set.schema.json",
+  "title": "RuleSet",
+  "type": "object",
+  "required": ["schemaVersion", "rules"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "enabled"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" },
+          "source": {
+            "type": "string",
+            "enum": ["default", "global", "project", "run"]
+          },
+          "nonNegotiable": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
