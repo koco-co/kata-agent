@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/issue-sync-result.schema.json",
+  "title": "IssueSyncResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "tracker",
+    "sourceIssueDraftRef",
+    "status",
+    "message",
+    "syncedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "tracker": { "type": "string", "enum": ["zentao"] },
+    "sourceIssueDraftRef": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["dry-run", "synced", "failed", "skipped"]
+    },
+    "remoteId": { "type": "string" },
+    "remoteUrl": { "type": "string", "format": "uri" },
+    "message": { "type": "string" },
+    "syncedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

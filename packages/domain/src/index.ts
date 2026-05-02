@@ -32,7 +32,21 @@ export type {
 export type { DesignReport, HtmlReport, ReviewReport, XMindExport } from "./review";
 export type { KnowledgeSuggestion } from "./knowledge";
 export type { BugReport, BugReportInput } from "./bug-report";
-export type { NotificationRequest, NotificationResult } from "./notification";
+export type {
+  ExternalSeverity,
+  IssueDraft,
+  IssueSyncResult,
+  IssueSyncStatus,
+  LanhuWritebackDraft,
+  LanhuWritebackResult,
+  LanhuWritebackStatus,
+} from "./collaboration";
+export type {
+  NotificationDeliveryStatus,
+  NotificationPurpose,
+  NotificationRequest,
+  NotificationResult,
+} from "./notification";
 export type {
   AutomationPriority,
   AutomationSurface,

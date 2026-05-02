@@ -112,6 +112,31 @@ describe("domain contracts", () => {
       "issue-tracker",
       "rule-source",
     ]);
+    expectEnum("NotificationRequest", ["properties", "purpose"], [
+      "confirmation",
+      "automation-result",
+      "issue-sync",
+      "lanhu-writeback",
+    ]);
+    expectEnum("NotificationResult", ["properties", "status"], [
+      "dry-run",
+      "sent",
+      "failed",
+      "skipped",
+    ]);
+    expectEnum("IssueDraft", ["properties", "severity"], ["P0", "P1", "P2"]);
+    expectEnum("IssueSyncResult", ["properties", "status"], [
+      "dry-run",
+      "synced",
+      "failed",
+      "skipped",
+    ]);
+    expectEnum("LanhuWritebackResult", ["properties", "status"], [
+      "dry-run",
+      "written",
+      "failed",
+      "skipped",
+    ]);
     expectEnum(
       "FlowSpec",
       ["properties", "flows", "items", "properties", "surface"],

@@ -3,11 +3,15 @@
   "$id": "https://kata-agent.local/schemas/notification-request.schema.json",
   "title": "NotificationRequest",
   "type": "object",
-  "required": ["channel", "title", "body"],
+  "required": ["channel", "purpose", "title", "body"],
   "properties": {
     "channel": {
       "type": "string",
       "enum": ["dingtalk"]
+    },
+    "purpose": {
+      "type": "string",
+      "enum": ["confirmation", "automation-result", "issue-sync", "lanhu-writeback"]
     },
     "title": {
       "type": "string",
@@ -16,6 +20,16 @@
     "body": {
       "type": "string",
       "minLength": 1
+    },
+    "sourceArtifactRef": {
+      "type": "string"
+    },
+    "atMobiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dryRun": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false

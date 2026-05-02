@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/lanhu-writeback-result.schema.json",
+  "title": "LanhuWritebackResult",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "feature",
+    "provider",
+    "targetUrl",
+    "status",
+    "message",
+    "writtenAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "[/\\\\]|^\\.$|^\\.\\.$|^[A-Za-z]:" }
+    },
+    "provider": { "type": "string", "enum": ["lanhu"] },
+    "targetUrl": { "type": "string", "format": "uri" },
+    "status": {
+      "type": "string",
+      "enum": ["dry-run", "written", "failed", "skipped"]
+    },
+    "remoteUrl": { "type": "string", "format": "uri" },
+    "message": { "type": "string" },
+    "writtenAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

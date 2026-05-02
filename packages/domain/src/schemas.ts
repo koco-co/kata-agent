@@ -43,6 +43,10 @@ export const SCHEMA_REGISTRY = {
   BugReport: "schemas/bug-report.schema.json",
   NotificationRequest: "schemas/notification-request.schema.json",
   NotificationResult: "schemas/notification-result.schema.json",
+  IssueDraft: "schemas/issue-draft.schema.json",
+  IssueSyncResult: "schemas/issue-sync-result.schema.json",
+  LanhuWritebackDraft: "schemas/lanhu-writeback-draft.schema.json",
+  LanhuWritebackResult: "schemas/lanhu-writeback-result.schema.json",
 } as const;
 
 export type SchemaName = keyof typeof SCHEMA_REGISTRY;

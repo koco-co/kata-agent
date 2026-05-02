@@ -426,6 +426,7 @@ export class WorkflowExecutor {
               node.action,
               {
                 channel: "dingtalk",
+                purpose: "automation-result",
                 title: `Automation ${record.status}: ${record.project}/${record.feature}`,
                 body: `Run ${record.runId} completed with ${bugReport.bugs.length} bug(s).`,
               },

@@ -3,7 +3,14 @@
   "$id": "https://kata-agent.local/schemas/notification-result.schema.json",
   "title": "NotificationResult",
   "type": "object",
-  "required": ["schemaVersion", "channel", "sent"],
+  "required": [
+    "schemaVersion",
+    "channel",
+    "purpose",
+    "status",
+    "sent",
+    "deliveredAt"
+  ],
   "properties": {
     "schemaVersion": {
       "const": "0.1"
@@ -12,11 +19,26 @@
       "type": "string",
       "enum": ["dingtalk"]
     },
+    "purpose": {
+      "type": "string",
+      "enum": ["confirmation", "automation-result", "issue-sync", "lanhu-writeback"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["dry-run", "sent", "failed", "skipped"]
+    },
     "sent": {
       "type": "boolean"
     },
     "messageId": {
       "type": "string"
+    },
+    "providerResponse": {
+      "type": "string"
+    },
+    "deliveredAt": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "additionalProperties": false

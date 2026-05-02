@@ -10,6 +10,24 @@ export interface SchemaValidationResult {
 }
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
+ajv.addFormat("date-time", {
+  type: "string",
+  validate: (value: string) =>
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      value,
+    ) && Number.isFinite(Date.parse(value)),
+});
+ajv.addFormat("uri", {
+  type: "string",
+  validate: (value: string) => {
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
 const validators = new Map<SchemaName, ValidateFunction>();
 
 function repoRoot(): string {

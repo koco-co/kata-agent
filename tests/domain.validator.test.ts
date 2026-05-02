@@ -198,4 +198,35 @@ describe("domain schema validator", () => {
       }).valid,
     ).toBe(false);
   });
+
+  test("rejects external collaboration path escapes and unconfirmed writeback", () => {
+    expect(
+      validateSchema("IssueDraft", {
+        schemaVersion: "0.1",
+        project: "../outside",
+        feature: "rule-config",
+        sourceBugReportRef: "BugReport:abc",
+        sourceBugId: "BUG-001",
+        title: "保存失败",
+        severity: "P0",
+        descriptionMarkdown: "failure",
+        reproductionSteps: ["click save"],
+        evidenceRefs: [],
+        labels: [],
+        confirmedForSync: true,
+      }).valid,
+    ).toBe(false);
+    expect(
+      validateSchema("LanhuWritebackDraft", {
+        schemaVersion: "0.1",
+        project: "demo",
+        feature: "rules/config",
+        sourceRequirementSpecRef: "RequirementSpec:abc",
+        targetUrl: "https://lanhu.example/prd/123",
+        summaryMarkdown: "change",
+        changeRefs: ["REQ-001"],
+        confirmedForWriteback: true,
+      }).valid,
+    ).toBe(false);
+  });
 });
