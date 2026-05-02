@@ -2,7 +2,7 @@ import type { PluginManifest } from "./types";
 
 const PLUGIN_OUTPUT_CONTRACTS: Record<string, readonly string[]> = {
   "requirement-source": ["RequirementSourceBundle"],
-  "artifact-export": ["XMindExport"],
+  "artifact-export": ["XMindExport", "HtmlReport"],
   automation: ["RunRecord", "EvidencePack"],
   notification: ["NotificationResult"],
   "issue-tracker": ["IssueSyncResult"],

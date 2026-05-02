@@ -1,0 +1,22 @@
+name: report
+title: HTML 报告
+version: 0.1.0
+type: artifact-export
+actions:
+  - id: report.generateAllureReport
+    title: 生成 Allure HTML 报告
+    inputSchema: RunRecord
+    outputSchema: HtmlReport
+    sideEffects:
+      writeArtifacts: true
+  - id: report.generateHtmlReport
+    title: 生成 HTML 报告
+    inputSchema: RunRecord
+    outputSchema: HtmlReport
+    sideEffects:
+      writeArtifacts: true
+permissions:
+  network: none
+  secrets: []
+  writeScopes:
+    - feature.reports

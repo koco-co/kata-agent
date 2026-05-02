@@ -22,6 +22,7 @@ export const SCHEMA_REGISTRY = {
   TestSpec: "schemas/test-spec.schema.json",
   ReviewReport: "schemas/review-report.schema.json",
   XMindExport: "schemas/xmind-export.schema.json",
+  HtmlReport: "schemas/html-report.schema.json",
   DesignReport: "schemas/design-report.schema.json",
   KnowledgeSuggestion: "schemas/knowledge-suggestion.schema.json",
   PluginManifest: "schemas/plugin-manifest.schema.json",

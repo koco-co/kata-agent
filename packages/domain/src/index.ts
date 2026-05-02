@@ -29,7 +29,7 @@ export type {
   TestSpecAuthorInput,
   TestSpecReviewerInput,
 } from "./test-spec";
-export type { DesignReport, ReviewReport, XMindExport } from "./review";
+export type { DesignReport, HtmlReport, ReviewReport, XMindExport } from "./review";
 export type { KnowledgeSuggestion } from "./knowledge";
 export type { BugReport, BugReportInput } from "./bug-report";
 export type {

@@ -15,6 +15,14 @@ export interface XMindExport {
   caseCount: number;
 }
 
+export interface HtmlReport {
+  schemaVersion: "0.1";
+  format: "html";
+  outputPath: string;
+  runId: string;
+  status: "passed" | "failed" | "blocked";
+}
+
 export interface DesignReport {
   schemaVersion: "0.1";
   summary: string;

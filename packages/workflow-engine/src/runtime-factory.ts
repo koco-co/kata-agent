@@ -11,6 +11,7 @@ import type {
   LanhuFetchInput,
   RequirementDraft,
   RequirementSpec,
+  RunRecord,
   RunPlan,
   TestSpec,
 } from "../../domain/src/index";
@@ -25,6 +26,8 @@ import { exportXMindFile } from "../../../plugins/xmind/src/exporter";
 import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
 import { executeRunPlan } from "../../../plugins/playwright/src/real";
+import { generateAllureReport } from "../../../plugins/report/src/allure";
+import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
 import { WorkflowExecutor } from "./executor";
 
 export interface RuntimeFactoryOptions {
@@ -239,6 +242,12 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("playwright.runPlan", (input, context) =>
       mockRunPlan(input as RunPlan, context),
     );
+    actions.register("report.generateHtmlReport", (input, context) =>
+      writeHtmlReport(input as RunRecord, featureDir(context)),
+    );
+    actions.register("report.generateAllureReport", (input, context) =>
+      generateAllureReport(input as RunRecord, featureDir(context)),
+    );
   } else {
     const config = new LocalConfigLoader({ rootDir: options.rootDir });
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
@@ -280,6 +289,12 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
       );
       return result.record;
     });
+    actions.register("report.generateHtmlReport", (input, context) =>
+      writeHtmlReport(input as RunRecord, featureDir(context)),
+    );
+    actions.register("report.generateAllureReport", (input, context) =>
+      generateAllureReport(input as RunRecord, featureDir(context)),
+    );
   }
 
   actions.register("knowledge.consult", (input) =>
