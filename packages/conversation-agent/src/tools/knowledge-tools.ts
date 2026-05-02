@@ -39,7 +39,7 @@ function missingParam(name: string): ToolResult {
  */
 export function createKnowledgeTools(): Record<string, ConversationTool> {
   const searchTool: ConversationTool = {
-    name: "knowledge.search",
+    name: "knowledge_search",
     description:
       "Search the knowledge base with a text query. Returns mock results " +
       "matching the query.",
@@ -84,7 +84,7 @@ export function createKnowledgeTools(): Record<string, ConversationTool> {
   };
 
   const suggestionsTool: ConversationTool = {
-    name: "knowledge.suggestions",
+    name: "knowledge_suggestions",
     description:
       "Get AI-generated suggestions based on optional context. Returns " +
       "mock suggestion items.",
@@ -133,7 +133,7 @@ export function createKnowledgeTools(): Record<string, ConversationTool> {
   };
 
   const acceptTool: ConversationTool = {
-    name: "knowledge.accept",
+    name: "knowledge_accept",
     description:
       "Accept a knowledge suggestion by ID. Marks the suggestion as " +
       "accepted (mock).",
@@ -173,7 +173,7 @@ export function createKnowledgeTools(): Record<string, ConversationTool> {
   };
 
   const rejectTool: ConversationTool = {
-    name: "knowledge.reject",
+    name: "knowledge_reject",
     description:
       "Reject a knowledge suggestion by ID. Marks the suggestion as " +
       "rejected (mock).",

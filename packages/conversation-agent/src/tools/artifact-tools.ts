@@ -37,7 +37,7 @@ function missingParam(name: string): ToolResult {
  */
 export function createArtifactTools(): Record<string, ConversationTool> {
   const listTool: ConversationTool = {
-    name: "artifact.list",
+    name: "artifact_list",
     description:
       "List artifacts, optionally filtered by project or feature. " +
       "Returns a mock list of artifacts.",
@@ -88,7 +88,7 @@ export function createArtifactTools(): Record<string, ConversationTool> {
   };
 
   const readTool: ConversationTool = {
-    name: "artifact.read",
+    name: "artifact_read",
     description:
       "Read the full contents of an artifact by ID. Returns mock content.",
     inputSchema: {
@@ -128,7 +128,7 @@ export function createArtifactTools(): Record<string, ConversationTool> {
   };
 
   const summarizeTool: ConversationTool = {
-    name: "artifact.summarize",
+    name: "artifact_summarize",
     description:
       "Generate a brief summary of an artifact by ID. Returns mock summary.",
     inputSchema: {

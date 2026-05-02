@@ -41,7 +41,7 @@ describe("approval tool", () => {
   const tool = createApprovalTool(tmpDir, { timeout: 1 });
 
   test("createApprovalTool returns a tool with correct metadata", () => {
-    expect(tool.name).toBe("approval.request");
+    expect(tool.name).toBe("approval_request");
     expect(tool.description).toBeString();
     expect(tool.description.length).toBeGreaterThan(0);
     expect(tool.permission).toBe("safe");
@@ -92,7 +92,7 @@ describe("approval tool", () => {
 
   test("createApprovalTool accepts custom timeout option", () => {
     const fastTool = createApprovalTool("/tmp/test-approvals-fast", { timeout: 5 });
-    expect(fastTool.name).toBe("approval.request");
+    expect(fastTool.name).toBe("approval_request");
   });
 });
 

@@ -232,7 +232,7 @@ export function createFileTools(
   workspaceRoot: string,
 ): Record<string, ConversationTool> {
   const listTool: ConversationTool = {
-    name: "file.list",
+    name: "file_list",
     description: "List files and directories inside the workspace",
     inputSchema: {
       type: "object",
@@ -288,7 +288,7 @@ export function createFileTools(
   };
 
   const readTool: ConversationTool = {
-    name: "file.read",
+    name: "file_read",
     description: "Read the contents of a file inside the workspace",
     inputSchema: {
       type: "object",
@@ -372,7 +372,7 @@ export function createFileTools(
   };
 
   const writeTool: ConversationTool = {
-    name: "file.write",
+    name: "file_write",
     description: "Write content to a file inside the workspace",
     inputSchema: {
       type: "object",

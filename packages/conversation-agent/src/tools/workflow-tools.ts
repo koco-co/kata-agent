@@ -38,7 +38,7 @@ function missingParam(name: string): ToolResult {
  */
 export function createWorkflowTools(): Record<string, ConversationTool> {
   const startTool: ConversationTool = {
-    name: "workflow.start",
+    name: "workflow_start",
     description:
       "Start a QA workflow. Accepts workflow name, optional project, " +
       "feature, and source URL. Returns a mock run ID.",
@@ -91,7 +91,7 @@ export function createWorkflowTools(): Record<string, ConversationTool> {
   };
 
   const statusTool: ConversationTool = {
-    name: "workflow.status",
+    name: "workflow_status",
     description:
       "Check the current status of a workflow run. Returns a mock status.",
     inputSchema: {
@@ -130,7 +130,7 @@ export function createWorkflowTools(): Record<string, ConversationTool> {
   };
 
   const resumeTool: ConversationTool = {
-    name: "workflow.resume",
+    name: "workflow_resume",
     description:
       "Resume a paused workflow run. Returns a mock success response.",
     inputSchema: {
@@ -169,7 +169,7 @@ export function createWorkflowTools(): Record<string, ConversationTool> {
   };
 
   const findRunsTool: ConversationTool = {
-    name: "workflow.find_runs",
+    name: "workflow_find_runs",
     description:
       "Find recent workflow runs, optionally filtered by project or " +
       "workflow name. Returns a mock list.",

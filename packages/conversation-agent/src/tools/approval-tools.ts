@@ -65,7 +65,7 @@ export function createApprovalTool(
   const timeoutMs = options?.timeout ?? 30_000;
 
   const tool: ConversationTool = {
-    name: "approval.request",
+    name: "approval_request",
     description: "Request user approval for an action",
     inputSchema: {
       type: "object",

@@ -275,7 +275,7 @@ export function createShellTool(
   workspaceRoot: string,
 ): ConversationTool {
   const shellTool: ConversationTool = {
-    name: "shell.exec",
+    name: "shell_exec",
     description:
       "Execute a shell command inside the workspace. " +
       "Commands are classified as allowed (read-only, dev commands), " +

@@ -66,7 +66,7 @@ afterAll(() => {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("shell.exec", () => {
+describe("shell_exec", () => {
   test("executes an allowed command (echo hello)", async () => {
     const tool = createShellTool(workspaceRoot);
     const result = await tool.execute({ command: "echo hello" }, ctx);
@@ -210,7 +210,7 @@ describe("shell.exec", () => {
 
   test("returns correct metadata (name, permission, toolset)", () => {
     const tool = createShellTool(workspaceRoot);
-    expect(tool.name).toBe("shell.exec");
+    expect(tool.name).toBe("shell_exec");
     expect(tool.permission).toBe("command");
     expect(tool.toolset).toBe("shell");
     expect(tool.description).toBeString();

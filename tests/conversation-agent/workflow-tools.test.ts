@@ -54,10 +54,10 @@ describe("workflow tools", () => {
   });
 
   test("tools have correct names", () => {
-    expect(tools.workflow_start.name).toBe("workflow.start");
-    expect(tools.workflow_status.name).toBe("workflow.status");
-    expect(tools.workflow_resume.name).toBe("workflow.resume");
-    expect(tools.workflow_find_runs.name).toBe("workflow.find_runs");
+    expect(tools.workflow_start.name).toBe("workflow_start");
+    expect(tools.workflow_status.name).toBe("workflow_status");
+    expect(tools.workflow_resume.name).toBe("workflow_resume");
+    expect(tools.workflow_find_runs.name).toBe("workflow_find_runs");
   });
 
   test("tools have correct permissions (all safe)", () => {
@@ -181,9 +181,9 @@ describe("artifact tools", () => {
   });
 
   test("tools have correct names", () => {
-    expect(tools.artifact_list.name).toBe("artifact.list");
-    expect(tools.artifact_read.name).toBe("artifact.read");
-    expect(tools.artifact_summarize.name).toBe("artifact.summarize");
+    expect(tools.artifact_list.name).toBe("artifact_list");
+    expect(tools.artifact_read.name).toBe("artifact_read");
+    expect(tools.artifact_summarize.name).toBe("artifact_summarize");
   });
 
   test("tools have correct permissions (all safe)", () => {
@@ -272,10 +272,10 @@ describe("knowledge tools", () => {
   });
 
   test("tools have correct names", () => {
-    expect(tools.knowledge_search.name).toBe("knowledge.search");
-    expect(tools.knowledge_suggestions.name).toBe("knowledge.suggestions");
-    expect(tools.knowledge_accept.name).toBe("knowledge.accept");
-    expect(tools.knowledge_reject.name).toBe("knowledge.reject");
+    expect(tools.knowledge_search.name).toBe("knowledge_search");
+    expect(tools.knowledge_suggestions.name).toBe("knowledge_suggestions");
+    expect(tools.knowledge_accept.name).toBe("knowledge_accept");
+    expect(tools.knowledge_reject.name).toBe("knowledge_reject");
   });
 
   test("tools have correct permissions", () => {

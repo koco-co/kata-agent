@@ -66,7 +66,7 @@ afterAll(() => {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("file.read", () => {
+describe("file_read", () => {
   test("reads a file inside workspace", async () => {
     const tools = createFileTools(workspaceRoot);
     const result = await tools.file_read.execute({ path: "hello.txt" }, ctx);
@@ -135,7 +135,7 @@ describe("file.read", () => {
   });
 });
 
-describe("file.write", () => {
+describe("file_write", () => {
   test("writes a new file inside workspace (creates parent dirs)", async () => {
     const tools = createFileTools(workspaceRoot);
     const result = await tools.file_write.execute(
@@ -223,7 +223,7 @@ describe("file.write", () => {
   });
 });
 
-describe("file.list", () => {
+describe("file_list", () => {
   test("lists entries in workspace root", async () => {
     const tools = createFileTools(workspaceRoot);
     const result = await tools.file_list.execute({ path: "." }, ctx);
@@ -292,9 +292,9 @@ describe("module exports", () => {
     expect(tools).toHaveProperty("file_list");
     expect(tools).toHaveProperty("file_read");
     expect(tools).toHaveProperty("file_write");
-    expect(tools.file_list.name).toBe("file.list");
-    expect(tools.file_read.name).toBe("file.read");
-    expect(tools.file_write.name).toBe("file.write");
+    expect(tools.file_list.name).toBe("file_list");
+    expect(tools.file_read.name).toBe("file_read");
+    expect(tools.file_write.name).toBe("file_write");
   });
 
   test("tools have correct permissions", () => {
