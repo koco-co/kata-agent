@@ -15,13 +15,17 @@ import {
 } from "../../artifact-repo/src/index";
 import type {
   ArtifactRef,
+  BugReport,
   ClarificationDossier,
   ConfirmationResult,
   DesignReport,
+  EvidencePack,
   KnowledgeConsultResult,
+  HtmlReport,
   RequirementDraft,
   RequirementGapReport,
   RequirementSpec,
+  NotificationResult,
   RequirementSourceBundle,
   ReviewReport,
   FlowSpec,
@@ -34,6 +38,7 @@ import type {
 } from "../../domain/src/index";
 import type { PluginActionRegistry } from "../../plugin-runtime/src/index";
 import {
+  buildBugReport,
   buildDesignReport,
   buildEvidencePackFromRunRecord,
   buildFlowSpecFromTestSpec,
@@ -385,6 +390,53 @@ export class WorkflowExecutor {
                 "automation/evidence-pack.json",
                 output,
                 ["feature.automation"],
+              ),
+            );
+            break;
+          }
+          case "bug-report": {
+            if (!node.action) throw new Error("Missing action: bug-report");
+            const record = valueFor<RunRecord>("RunRecord");
+            const evidence = valueFor<EvidencePack>("EvidencePack");
+            const output = buildBugReport(record, evidence);
+            writtenRefs.push(
+              writeJson("BugReport", "reports/bug-report.json", output, [
+                "feature.reports",
+              ]),
+            );
+            const htmlReport = (await this.services.actions.execute(
+              node.action,
+              record,
+              actionContext,
+            )) as HtmlReport;
+            writtenRefs.push(
+              writeJson("HtmlReport", "reports/html-report.json", htmlReport, [
+                "feature.reports",
+              ]),
+            );
+            break;
+          }
+          case "notify-run-complete": {
+            if (!node.action) {
+              throw new Error("Missing action: notify-run-complete");
+            }
+            const record = valueFor<RunRecord>("RunRecord");
+            const bugReport = valueFor<BugReport>("BugReport");
+            const output = (await this.services.actions.execute(
+              node.action,
+              {
+                channel: "dingtalk",
+                title: `Automation ${record.status}: ${record.project}/${record.feature}`,
+                body: `Run ${record.runId} completed with ${bugReport.bugs.length} bug(s).`,
+              },
+              actionContext,
+            )) as NotificationResult;
+            writtenRefs.push(
+              writeJson(
+                "NotificationResult",
+                "reports/notification-result.json",
+                output,
+                ["feature.reports"],
               ),
             );
             break;

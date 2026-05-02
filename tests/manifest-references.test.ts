@@ -176,6 +176,7 @@ describe("manifest schema references", () => {
     ) as {
       name: string;
       workflow: string;
+      outputs?: string[];
       requiredPlugins?: string[];
     };
     const workflow = YAML.parse(
@@ -192,7 +193,15 @@ describe("manifest schema references", () => {
     };
     expect(skill.name).toBe("ui-script-gen");
     expect(skill.workflow).toBe("ui-script-gen");
-    expect(skill.requiredPlugins).toEqual(["playwright"]);
+    expect(skill.outputs).toEqual([
+      "FlowSpec",
+      "RunPlan",
+      "RunRecord",
+      "EvidencePack",
+      "BugReport",
+      "HtmlReport",
+    ]);
+    expect(skill.requiredPlugins).toEqual(["playwright", "report", "notify"]);
     expect(workflow.skill).toBe("ui-script-gen");
     expect(workflow.nodes).toEqual([
       { id: "create-automation-workspace", type: "artifact" },
@@ -229,9 +238,21 @@ describe("manifest schema references", () => {
         dependsOn: ["execute-run-plan"],
       },
       {
+        id: "bug-report",
+        type: "tool",
+        action: "report.generateHtmlReport",
+        dependsOn: ["collect-evidence"],
+      },
+      {
+        id: "notify-run-complete",
+        type: "tool",
+        action: "notify.sendNotification",
+        dependsOn: ["bug-report"],
+      },
+      {
         id: "write-automation-report",
         type: "artifact",
-        dependsOn: ["collect-evidence"],
+        dependsOn: ["notify-run-complete"],
       },
     ]);
   });

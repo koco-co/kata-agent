@@ -1,7 +1,7 @@
 name: ui-script-gen
 title: UI 自动化脚本生成
-version: 0.2.0
-description: 从 TestSpec 生成 web-only FlowSpec、RunPlan、Playwright 脚本、RunRecord 和 EvidencePack。
+version: 0.3.0
+description: 从 TestSpec 生成 web-only FlowSpec、RunPlan、Playwright 脚本、RunRecord、EvidencePack、BugReport 和 HTML 报告。
 workflow: ui-script-gen
 inputs:
   schema: UiScriptGenInput
@@ -10,5 +10,9 @@ outputs:
   - RunPlan
   - RunRecord
   - EvidencePack
+  - BugReport
+  - HtmlReport
 requiredPlugins:
   - playwright
+  - report
+  - notify

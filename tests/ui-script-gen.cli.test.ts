@@ -120,6 +120,8 @@ describe("ui-script-gen cli", () => {
     const reportPath = join(dir, "reports/automation-report.md");
     expect(existsSync(reportPath)).toBe(true);
     expect(readFileSync(reportPath, "utf8")).toContain("Automation Report");
+    expect(existsSync(join(dir, "reports/automation-report.html"))).toBe(true);
+    expect(existsSync(join(dir, "reports/notification-result.json"))).toBe(true);
   });
 
   test("rejects schema-invalid test spec path at the CLI boundary", async () => {

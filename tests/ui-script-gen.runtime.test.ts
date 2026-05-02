@@ -165,6 +165,10 @@ describe("ui-script-gen runtime", () => {
       "automation/run-record.json",
       "automation/evidence-pack.json",
       "automation/evidence/run-log.txt",
+      "reports/bug-report.json",
+      "reports/html-report.json",
+      "reports/automation-report.html",
+      "reports/notification-result.json",
       "reports/automation-report.md",
       "traces/automation-run-1.jsonl",
     ]) {
@@ -181,6 +185,13 @@ describe("ui-script-gen runtime", () => {
     expect(
       readFileSync(join(dir, "reports/automation-report.md"), "utf8"),
     ).toContain("Automation Report");
+    expect(
+      readFileSync(join(dir, "reports/automation-report.html"), "utf8"),
+    ).toContain("PASSED");
+    const bugReport = JSON.parse(
+      readFileSync(join(dir, "reports/bug-report.json"), "utf8"),
+    ) as { bugs: unknown[] };
+    expect(bugReport.bugs).toHaveLength(0);
   });
 
   test("defaults omitted mode to mock", async () => {

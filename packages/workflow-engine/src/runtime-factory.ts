@@ -9,6 +9,7 @@ import { featureDir } from "../../artifact-repo/src/index";
 import { LocalConfigLoader } from "../../core/src/index";
 import type {
   LanhuFetchInput,
+  NotificationRequest,
   PlaywrightRealOptions,
   RequirementDraft,
   RequirementSpec,
@@ -28,6 +29,7 @@ import { mockExportXMind } from "../../../plugins/xmind/src/mock";
 import { mockRunPlan } from "../../../plugins/playwright/src/mock";
 import { executeRunPlan } from "../../../plugins/playwright/src/real";
 import { selfHealingRun } from "../../../plugins/playwright/src/self-heal";
+import { sendNotification } from "../../../plugins/notify/src/mock";
 import { generateAllureReport } from "../../../plugins/report/src/allure";
 import { writeHtmlReport } from "../../../plugins/report/src/html-renderer";
 import { WorkflowExecutor } from "./executor";
@@ -253,6 +255,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     actions.register("report.generateAllureReport", (input, context) =>
       generateAllureReport(input as RunRecord, featureDir(context)),
     );
+    actions.register("notify.sendNotification", (input) =>
+      sendNotification(input as NotificationRequest),
+    );
   } else {
     const config = new LocalConfigLoader({ rootDir: options.rootDir });
     const baseUrl = config.resolveSecret("KATA_AGENT_PROVIDER_BASE_URL");
@@ -304,6 +309,9 @@ export function createRuntimeServices(options: RuntimeFactoryOptions): {
     );
     actions.register("report.generateAllureReport", (input, context) =>
       generateAllureReport(input as RunRecord, featureDir(context)),
+    );
+    actions.register("notify.sendNotification", (input) =>
+      sendNotification(input as NotificationRequest),
     );
   }
 

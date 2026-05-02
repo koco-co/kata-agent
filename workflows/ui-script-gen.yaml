@@ -1,5 +1,5 @@
 id: ui-script-gen
-version: 0.2.0
+version: 0.3.0
 skill: ui-script-gen
 nodes:
   - id: create-automation-workspace
@@ -24,6 +24,14 @@ nodes:
   - id: collect-evidence
     type: artifact
     dependsOn: [execute-run-plan]
+  - id: bug-report
+    type: tool
+    action: report.generateHtmlReport
+    dependsOn: [collect-evidence]
+  - id: notify-run-complete
+    type: tool
+    action: notify.sendNotification
+    dependsOn: [bug-report]
   - id: write-automation-report
     type: artifact
-    dependsOn: [collect-evidence]
+    dependsOn: [notify-run-complete]
