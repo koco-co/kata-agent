@@ -1,0 +1,15 @@
+name: notify
+title: 通知
+version: 0.1.0
+type: notification
+actions:
+  - id: notify.sendNotification
+    title: 发送 DingTalk 通知
+    inputSchema: NotificationRequest
+    outputSchema: NotificationResult
+    sideEffects:
+      external: true
+permissions:
+  network: none
+  secrets: []
+  writeScopes: []

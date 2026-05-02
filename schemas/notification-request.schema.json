@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/notification-request.schema.json",
+  "title": "NotificationRequest",
+  "type": "object",
+  "required": ["channel", "title", "body"],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "enum": ["dingtalk"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

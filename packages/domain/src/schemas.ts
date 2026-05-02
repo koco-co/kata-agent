@@ -41,6 +41,8 @@ export const SCHEMA_REGISTRY = {
   EvidencePack: "schemas/evidence-pack.schema.json",
   BugReportInput: "schemas/bug-report-input.schema.json",
   BugReport: "schemas/bug-report.schema.json",
+  NotificationRequest: "schemas/notification-request.schema.json",
+  NotificationResult: "schemas/notification-result.schema.json",
 } as const;
 
 export type SchemaName = keyof typeof SCHEMA_REGISTRY;

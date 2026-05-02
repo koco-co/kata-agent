@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kata-agent.local/schemas/notification-result.schema.json",
+  "title": "NotificationResult",
+  "type": "object",
+  "required": ["schemaVersion", "channel", "sent"],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["dingtalk"]
+    },
+    "sent": {
+      "type": "boolean"
+    },
+    "messageId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
