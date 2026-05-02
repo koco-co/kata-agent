@@ -1,0 +1,9 @@
+#!/usr/bin/env bun
+// ---------------------------------------------------------------------------
+// kata — CLI entry point for kata-agent
+// Type `kata` in your terminal to start the interactive agent.
+// ---------------------------------------------------------------------------
+
+import { startChat } from "../apps/cli/src/chat";
+
+startChat();
