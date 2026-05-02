@@ -143,7 +143,7 @@ export function startChat(options: ChatOptions = {}): void {
 
     // Handle slash commands
     if (trimmed.startsWith("/")) {
-      const response = agent.handleSlashCommand(trimmed);
+      const response = await agent.handleSlashCommand(trimmed);
 
       if (trimmed === "/exit") {
         console.log(response);

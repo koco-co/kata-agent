@@ -189,8 +189,9 @@ if (command === "chat") {
     provider: argValue("--provider") ?? "deepseek",
     apiKey: process.env.KATA_AGENT_API_KEY,
   });
-  // Chat runs its own event loop via readline; do not exit.
-  // The process stays alive until the user types /exit.
+  // Chat manages its own lifecycle via readline.
+  // Prevent fallthrough to "Unknown command" below.
+  // The process stays alive because readline keeps the event loop active.
 } else if (command === "knowledge suggestions") {
   const rootDir = requireArg("--root");
   const project = requireArg("--project");
@@ -846,8 +847,10 @@ if (command === "confirmation import") {
   process.exit(0);
 }
 
-console.error(`Unknown command: ${command}`);
-process.exit(1);
+if (!["chat", "test-case-gen", "ui-script-gen"].includes(command)) {
+  console.error(`Unknown command: ${command}`);
+  process.exit(1);
+}
 
 function rejectedP0Gaps(
   location: { rootDir: string; project: string; feature: string },
