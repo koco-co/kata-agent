@@ -6,6 +6,8 @@
 // ---------------------------------------------------------------------------
 
 import type { ConversationTool, ToolsetName } from "./types";
+import { buildTestingPromptBlock } from "./testing/system-prompt";
+import type { TestingWorkspaceSummary } from "./testing/workspace";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -44,6 +46,10 @@ const TOOL_USAGE_RULES = `
 // buildSystemPrompt
 // ---------------------------------------------------------------------------
 
+export interface SystemPromptOptions {
+  testingWorkspace?: TestingWorkspaceSummary;
+}
+
 /**
  * Build a system prompt for the conversation agent.
  *
@@ -56,6 +62,7 @@ export function buildSystemPrompt(
   tools: ConversationTool[],
   enabledToolsets: ToolsetName[],
   intentContext?: string,
+  options: SystemPromptOptions = {},
 ): string {
   const enabledSet = new Set(enabledToolsets);
   const filteredTools = tools.filter((t) => enabledSet.has(t.toolset));
@@ -72,14 +79,18 @@ export function buildSystemPrompt(
 
   const lines: string[] = [];
 
-  lines.push("# You are an AI assistant for the kata-agent development platform.");
-  lines.push("");
-  lines.push(
-    "You help users with software development tasks such as generating test cases,",
-  );
-  lines.push(
-    "writing code, creating bug reports, managing requirements, and more.",
-  );
+  if (options.testingWorkspace) {
+    lines.push(buildTestingPromptBlock(options.testingWorkspace));
+  } else {
+    lines.push("# You are an AI assistant for the kata-agent development platform.");
+    lines.push("");
+    lines.push(
+      "You help users with software development tasks such as generating test cases,",
+    );
+    lines.push(
+      "writing code, creating bug reports, managing requirements, and more.",
+    );
+  }
   lines.push("");
 
   // ---- Intent Context ----------------------------------------------------

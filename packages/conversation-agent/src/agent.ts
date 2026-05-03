@@ -12,6 +12,7 @@ import { IntentBias } from "./intent";
 import { SecretRedactor } from "./secret-redactor";
 import { buildSystemPrompt } from "./prompts";
 import { callProvider, defaultProviderConfig, type ProviderConfig, type ProviderResponse } from "./provider";
+import type { TestingWorkspaceSummary } from "./testing/workspace";
 
 // ---------------------------------------------------------------------------
 // AgentConfig
@@ -26,6 +27,7 @@ export interface AgentConfig {
   apiBase?: string;
   maxIterations?: number;
   stream?: boolean;
+  testingWorkspace?: TestingWorkspaceSummary;
 }
 
 export interface AgentCallbacks {
@@ -203,6 +205,8 @@ export class ConversationAgent {
         const prompt = buildSystemPrompt(
           this.runtime.listTools(),
           this.enabledToolsets,
+          undefined,
+          { testingWorkspace: this.config.testingWorkspace },
         );
         return prompt;
       }
@@ -365,6 +369,7 @@ export class ConversationAgent {
       this.runtime.listTools(),
       this.enabledToolsets,
       intentContext,
+      { testingWorkspace: this.config.testingWorkspace },
     );
 
     // 5-6. Call provider and loop for tool calls

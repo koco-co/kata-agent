@@ -39,3 +39,6 @@ export { SecretRedactor } from "./secret-redactor";
 
 export { callProvider, defaultProviderConfig } from "./provider";
 export type { ProviderConfig, ProviderResponse } from "./provider";
+
+export * from "./testing";
+export type { SystemPromptOptions } from "./prompts";
