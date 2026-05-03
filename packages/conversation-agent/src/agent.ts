@@ -25,6 +25,11 @@ export interface AgentConfig {
   apiKey: string;
   apiBase?: string;
   maxIterations?: number;
+  stream?: boolean;
+}
+
+export interface AgentCallbacks {
+  onStreamToken?: (token: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,7 +54,11 @@ export class ConversationAgent {
   // ---- Constructor -------------------------------------------------------
 
   constructor(config: AgentConfig) {
-    this.config = { ...config, maxIterations: config.maxIterations ?? 30 };
+    this.config = {
+      ...config,
+      maxIterations: config.maxIterations ?? 30,
+      stream: config.stream ?? false,
+    };
     this.runtime = new ToolRuntime();
     this.store = new SessionStore(config.sessionDir);
     this.intent = new IntentBias();
@@ -61,8 +70,9 @@ export class ConversationAgent {
 
   // ---- Private helpers ---------------------------------------------------
 
-  private getProviderConfig(): ProviderConfig {
+  private getProviderConfig(callbacks?: AgentCallbacks): ProviderConfig {
     const cfg = defaultProviderConfig();
+    const stream = this.config.stream ?? false;
     return {
       model: this.config.model || cfg.model,
       baseUrl: this.config.apiBase || cfg.baseUrl,
@@ -70,6 +80,10 @@ export class ConversationAgent {
       temperature: 0.7,
       maxTokens: 8192,
       contextLength: cfg.contextLength,
+      stream,
+      ...(stream && callbacks?.onStreamToken
+        ? { onStreamToken: callbacks.onStreamToken }
+        : {}),
     };
   }
 
@@ -254,6 +268,7 @@ export class ConversationAgent {
    */
   async processUserMessage(
     userMessage: string,
+    callbacks: AgentCallbacks = {},
   ): Promise<{ messages: ChatMessage[]; finalResponse: string }> {
     // 1. Redact secrets
     const redactedMessage = this.redactor.redact(userMessage);
@@ -286,7 +301,7 @@ export class ConversationAgent {
     );
 
     // 5-6. Call provider and loop for tool calls
-    const providerConfig = this.getProviderConfig();
+    const providerConfig = this.getProviderConfig(callbacks);
     const toolSchema = this.buildToolSchema();
     const maxIter = this.config.maxIterations ?? 30;
 

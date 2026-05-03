@@ -78,6 +78,7 @@ function makeAgent(
     workspaceRoot: string;
     tools: ConversationTool[];
     maxIterations: number;
+    stream: boolean;
   }> = {},
 ): ConversationAgent {
   const dir = overrides.sessionDir ?? "/tmp/test-sessions";
@@ -89,6 +90,7 @@ function makeAgent(
     provider: "test-provider",
     apiKey: "test-key",
     maxIterations: overrides.maxIterations,
+    stream: overrides.stream,
   });
   if (overrides.tools) {
     for (const t of overrides.tools) {
@@ -303,6 +305,24 @@ describe("ConversationAgent", () => {
     expect(result.finalResponse).toBe("Mock response from provider");
     expect(logs.join("\n")).toContain("正在请求模型");
     expect(logs.join("\n")).toContain("模型响应完成");
+  });
+
+  test("processUserMessage forwards stream callback only when streaming is enabled", async () => {
+    const streamTokens: string[] = [];
+    const agent = makeAgent({ stream: true });
+
+    await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, stream please", {
+        onStreamToken: (token: string) => streamTokens.push(token),
+      }),
+    );
+
+    const providerConfig = (mockCallProvider.mock.calls as any)[0][0];
+    expect(providerConfig.stream).toBe(true);
+    expect(providerConfig.onStreamToken).toBeFunction();
+
+    providerConfig.onStreamToken("片段");
+    expect(streamTokens).toEqual(["片段"]);
   });
 
   test("processUserMessage returns friendly Chinese message when provider fails", async () => {

@@ -15,6 +15,8 @@ export interface ProviderConfig {
   maxTokens?: number;
   temperature?: number;
   contextLength?: number;
+  stream?: boolean;
+  onStreamToken?: (token: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +76,7 @@ export async function callProvider(
     ],
     temperature: config.temperature ?? 0.7,
     max_tokens: config.maxTokens ?? 8192,
-    stream: false,
+    stream: config.stream ?? false,
   };
 
   if (tools && tools.length > 0) {
@@ -98,7 +100,19 @@ export async function callProvider(
     );
   }
 
+  if (config.stream) {
+    return parseStreamingResponse(response, config.onStreamToken);
+  }
+
   const json: any = await response.json();
+  return parseProviderJson(json);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function parseProviderJson(json: any): ProviderResponse {
   const choice = json.choices?.[0];
 
   if (!choice) {
@@ -129,9 +143,136 @@ export async function callProvider(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+async function parseStreamingResponse(
+  response: Response,
+  onStreamToken?: (token: string) => void,
+): Promise<ProviderResponse> {
+  if (!response.body) {
+    throw new Error("Provider returned an empty streaming response body");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+  let reasoningContent = "";
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let finishReason: ProviderResponse["finishReason"] = "stop";
+  const toolCallParts = new Map<
+    number,
+    { id: string; name: string; argumentsText: string }
+  >();
+
+  const consumeEvent = (eventText: string): void => {
+    const data = eventText
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice("data:".length).trim())
+      .join("\n");
+
+    if (!data || data === "[DONE]") {
+      return;
+    }
+
+    const json = JSON.parse(data);
+    const choice = json.choices?.[0];
+    if (!choice) {
+      return;
+    }
+
+    const delta = choice.delta ?? {};
+    if (typeof delta.content === "string" && delta.content.length > 0) {
+      content += delta.content;
+      onStreamToken?.(delta.content);
+    }
+
+    if (
+      typeof delta.reasoning_content === "string" &&
+      delta.reasoning_content.length > 0
+    ) {
+      reasoningContent += delta.reasoning_content;
+    }
+
+    if (Array.isArray(delta.tool_calls)) {
+      for (const rawToolCall of delta.tool_calls) {
+        const index =
+          typeof rawToolCall.index === "number"
+            ? rawToolCall.index
+            : toolCallParts.size;
+        const current =
+          toolCallParts.get(index) ?? { id: "", name: "", argumentsText: "" };
+
+        if (typeof rawToolCall.id === "string") {
+          current.id = rawToolCall.id;
+        }
+        if (typeof rawToolCall.function?.name === "string") {
+          current.name = rawToolCall.function.name;
+        }
+        if (typeof rawToolCall.function?.arguments === "string") {
+          current.argumentsText += rawToolCall.function.arguments;
+        }
+
+        toolCallParts.set(index, current);
+      }
+    }
+
+    if (choice.finish_reason) {
+      finishReason = choice.finish_reason;
+    }
+
+    if (json.usage) {
+      inputTokens = json.usage.prompt_tokens ?? inputTokens;
+      outputTokens = json.usage.completion_tokens ?? outputTokens;
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    let separator = buffer.match(/\r?\n\r?\n/);
+    while (separator?.index !== undefined) {
+      const eventText = buffer.slice(0, separator.index);
+      buffer = buffer.slice(separator.index + separator[0].length);
+      consumeEvent(eventText);
+      separator = buffer.match(/\r?\n\r?\n/);
+    }
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim().length > 0) {
+    consumeEvent(buffer);
+  }
+
+  const toolCalls = Array.from(toolCallParts.values())
+    .filter((tc) => tc.id.length > 0 || tc.name.length > 0)
+    .map((tc) => ({
+      id: tc.id,
+      name: tc.name,
+      args: parseToolArguments(tc.argumentsText),
+    }));
+
+  return {
+    content,
+    ...(reasoningContent.length > 0 ? { reasoningContent } : {}),
+    inputTokens,
+    outputTokens,
+    finishReason,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+  };
+}
+
+function parseToolArguments(argumentsText: string): Record<string, unknown> {
+  try {
+    return JSON.parse(argumentsText || "{}");
+  } catch {
+    return {};
+  }
+}
 
 function serializeMessage(msg: ChatMessage): Record<string, unknown> {
   if (msg.role === "user") {

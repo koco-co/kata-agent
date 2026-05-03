@@ -24,7 +24,7 @@ export type {
 } from "./types";
 
 export { ConversationAgent } from "./agent";
-export type { AgentConfig } from "./agent";
+export type { AgentCallbacks, AgentConfig } from "./agent";
 
 export { SessionStore } from "./session-store";
 export type { SessionStoreOptions } from "./session-store";

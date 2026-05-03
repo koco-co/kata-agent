@@ -25,6 +25,7 @@ export interface ChatOptions {
   provider?: string;
   apiKey?: string;
   apiBase?: string;
+  stream?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,6 +36,10 @@ function ensureDir(dir: string): void {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
+}
+
+function readBooleanEnv(value: string | undefined): boolean {
+  return value === "1" || value?.toLowerCase() === "true";
 }
 
 /**
@@ -70,6 +75,9 @@ export function startChat(options: ChatOptions = {}): void {
     process.env.KATA_AGENT_BASE_URL ??
     process.env.DEEPSEEK_BASE_URL ??
     "https://api.deepseek.com";
+  const stream =
+    options.stream ??
+    readBooleanEnv(process.env.KATA_AGENT_STREAM);
 
   if (apiKey.trim().length === 0) {
     console.error(
@@ -90,6 +98,7 @@ export function startChat(options: ChatOptions = {}): void {
     provider,
     apiKey,
     apiBase,
+    stream,
   });
 
   // ---- Register all tools ----
@@ -175,8 +184,21 @@ export function startChat(options: ChatOptions = {}): void {
 
     // Process user message through the agent pipeline
     try {
-      const result = await agent.processUserMessage(trimmed);
-      console.log(`\n${result.finalResponse}\n`);
+      let streamedTokenCount = 0;
+      const result = await agent.processUserMessage(trimmed, {
+        onStreamToken: stream
+          ? (token: string) => {
+              streamedTokenCount++;
+              process.stdout.write(token);
+            }
+          : undefined,
+      });
+
+      if (stream && streamedTokenCount > 0) {
+        console.log("\n");
+      } else {
+        console.log(`\n${result.finalResponse}\n`);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`\nError: ${msg}\n`);

@@ -17,6 +17,25 @@ function mockJsonResponse(data: unknown, status = 200, statusText = "OK"): Respo
   return new Response(JSON.stringify(data), { status, statusText });
 }
 
+function mockSseResponse(events: string[]): Response {
+  const encoder = new TextEncoder();
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        for (const event of events) {
+          controller.enqueue(encoder.encode(event));
+        }
+        controller.close();
+      },
+    }),
+    {
+      status: 200,
+      statusText: "OK",
+      headers: { "Content-Type": "text/event-stream" },
+    },
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Clean env vars before each test to avoid cross-test pollution
 // ---------------------------------------------------------------------------
@@ -180,6 +199,38 @@ describe("callProvider", () => {
     expect(capturedBody.tools).toEqual(tools);
     expect(capturedBody.tool_choice).toBe("auto");
     expect(capturedBody.max_tokens).toBe(4096);
+    expect(capturedBody.stream).toBe(false);
+  });
+
+  test("streams content tokens when stream is enabled", async () => {
+    let capturedBody: any = null;
+    const tokens: string[] = [];
+
+    global.fetch = mock(async (_url: string, opts: any) => {
+      capturedBody = JSON.parse(opts.body);
+      return mockSseResponse([
+        'data: {"choices":[{"delta":{"content":"你"},"finish_reason":null}],"usage":{"prompt_tokens":3,"completion_tokens":1}}\n\n',
+        'data: {"choices":[{"delta":{"content":"好"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2}}\n\n',
+        "data: [DONE]\n\n",
+      ]);
+    }) as unknown as typeof fetch;
+
+    const result = await callProvider(
+      {
+        ...config,
+        stream: true,
+        onStreamToken: (token) => tokens.push(token),
+      },
+      systemPrompt,
+      messages,
+    );
+
+    expect(capturedBody.stream).toBe(true);
+    expect(tokens).toEqual(["你", "好"]);
+    expect(result.content).toBe("你好");
+    expect(result.inputTokens).toBe(3);
+    expect(result.outputTokens).toBe(2);
+    expect(result.finishReason).toBe("stop");
   });
 
   test("sends reasoning content for assistant messages", async () => {
