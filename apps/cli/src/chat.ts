@@ -71,6 +71,13 @@ export function startChat(options: ChatOptions = {}): void {
     process.env.DEEPSEEK_BASE_URL ??
     "https://api.deepseek.com";
 
+  if (apiKey.trim().length === 0) {
+    console.error(
+      "警告：未检测到 API Key。请先设置 DEEPSEEK_API_KEY（或 KATA_AGENT_API_KEY）后再启动聊天。",
+    );
+    process.exit(1);
+  }
+
   // Ensure directories exist
   ensureDir(sessionDir);
   ensureDir(approvalDir);

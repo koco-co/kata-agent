@@ -11,7 +11,7 @@ import { SessionStore } from "./session-store";
 import { IntentBias } from "./intent";
 import { SecretRedactor } from "./secret-redactor";
 import { buildSystemPrompt } from "./prompts";
-import { callProvider, defaultProviderConfig, type ProviderConfig } from "./provider";
+import { callProvider, defaultProviderConfig, type ProviderConfig, type ProviderResponse } from "./provider";
 
 // ---------------------------------------------------------------------------
 // AgentConfig
@@ -84,6 +84,45 @@ export class ConversationAgent {
           parameters: t.inputSchema,
         },
       }));
+  }
+
+  private formatProviderError(err: unknown): string {
+    const rawMessage = err instanceof Error ? err.message : String(err);
+    const message = this.redactor.redact(rawMessage);
+    const normalized = message.toLowerCase();
+
+    if (
+      normalized.includes("401") ||
+      normalized.includes("403") ||
+      normalized.includes("unauthorized") ||
+      normalized.includes("api key")
+    ) {
+      return [
+        "模型服务认证失败。请检查 DEEPSEEK_API_KEY 是否已正确设置，然后重试。",
+        "",
+        `错误详情：${message}`,
+      ].join("\n");
+    }
+
+    if (
+      normalized.includes("fetch failed") ||
+      normalized.includes("network") ||
+      normalized.includes("timeout") ||
+      normalized.includes("econn") ||
+      normalized.includes("enotfound")
+    ) {
+      return [
+        "无法连接模型服务。请检查网络连接和 DEEPSEEK_BASE_URL 后重试。",
+        "",
+        `错误详情：${message}`,
+      ].join("\n");
+    }
+
+    return [
+      "调用模型服务时出错。请稍后重试，或检查 DEEPSEEK_API_KEY 和模型服务配置。",
+      "",
+      `错误详情：${message}`,
+    ].join("\n");
   }
 
   // ---- Tool Registration -------------------------------------------------
@@ -229,12 +268,33 @@ export class ConversationAgent {
       const messages = await this.store.readMessages(this.sessionId);
 
       // Call provider
-      const providerResult = await callProvider(
-        providerConfig,
-        systemPrompt,
-        messages,
-        toolSchema.length > 0 ? toolSchema : undefined,
-      );
+      console.log("正在请求模型，请稍候...");
+      let providerResult: ProviderResponse;
+      try {
+        providerResult = await callProvider(
+          providerConfig,
+          systemPrompt,
+          messages,
+          toolSchema.length > 0 ? toolSchema : undefined,
+        );
+        console.log("模型响应完成。");
+      } catch (err: unknown) {
+        console.log("模型请求失败。");
+        finalResponse = this.formatProviderError(err);
+
+        const finalMsg: ChatMessage = {
+          role: "assistant",
+          content: finalResponse,
+          isFinal: true,
+          toolCalls: [],
+        };
+        await this.store.appendMessage(this.sessionId, finalMsg);
+
+        return {
+          messages: await this.store.readMessages(this.sessionId),
+          finalResponse,
+        };
+      }
 
       // Parse response for tool calls
       const toolCalls = providerResult.toolCalls;

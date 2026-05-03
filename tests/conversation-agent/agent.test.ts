@@ -1,4 +1,4 @@
-import { describe, expect, test, mock } from "bun:test";
+import { beforeEach, describe, expect, test, mock } from "bun:test";
 import { ConversationAgent } from "../../packages/conversation-agent/src/agent";
 import { buildSystemPrompt } from "../../packages/conversation-agent/src/prompts";
 import type { ConversationTool, ToolsetName } from "../../packages/conversation-agent/src/types";
@@ -9,13 +9,39 @@ import { randomUUID } from "crypto";
 // Mock the provider so tests don't hit the real API
 // ---------------------------------------------------------------------------
 
-const mockCallProvider = mock(async () => ({
-  content: "Mock response from provider",
-  inputTokens: 10,
-  outputTokens: 5,
-  finishReason: "stop" as const,
-  toolCalls: undefined,
-}));
+function mockProviderResponse() {
+  return {
+    content: "Mock response from provider",
+    inputTokens: 10,
+    outputTokens: 5,
+    finishReason: "stop" as const,
+    toolCalls: undefined,
+  };
+}
+
+const mockCallProvider = mock(async () => mockProviderResponse());
+
+beforeEach(() => {
+  mockCallProvider.mockClear();
+  mockCallProvider.mockImplementation(async () => mockProviderResponse());
+});
+
+async function captureConsoleLog<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; logs: string[] }> {
+  const originalLog = console.log;
+  const logs: string[] = [];
+
+  console.log = mock((...args: unknown[]) => {
+    logs.push(args.map(String).join(" "));
+  }) as typeof console.log;
+
+  try {
+    return { result: await fn(), logs };
+  } finally {
+    console.log = originalLog;
+  }
+}
 
 mock.module("../../packages/conversation-agent/src/provider", () => ({
   callProvider: mockCallProvider,
@@ -196,7 +222,9 @@ describe("ConversationAgent", () => {
       tools: [makeTool({ name: "read-file", toolset: "files" })],
     });
 
-    const result = await agent.processUserMessage("Hello, I need help");
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, I need help"),
+    );
 
     expect(result).toBeDefined();
     expect(result.finalResponse).toBeDefined();
@@ -204,11 +232,46 @@ describe("ConversationAgent", () => {
     expect(result.messages).toBeDefined();
   });
 
+  test("processUserMessage prints loading messages around provider call", async () => {
+    const agent = makeAgent();
+
+    const { result, logs } = await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, I need help"),
+    );
+
+    expect(result.finalResponse).toBe("Mock response from provider");
+    expect(logs.join("\n")).toContain("正在请求模型");
+    expect(logs.join("\n")).toContain("模型响应完成");
+  });
+
+  test("processUserMessage returns friendly Chinese message when provider fails", async () => {
+    mockCallProvider.mockImplementationOnce(async () => {
+      throw new Error("Provider error: 401 Unauthorized\ninvalid api key");
+    });
+
+    const agent = makeAgent();
+
+    const { result, logs } = await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, I need help"),
+    );
+
+    expect(result.finalResponse).toContain("模型服务认证失败");
+    expect(result.finalResponse).toContain("DEEPSEEK_API_KEY");
+    expect(logs.join("\n")).toContain("正在请求模型");
+    expect(logs.join("\n")).toContain("模型请求失败");
+
+    const finalMessage = result.messages.at(-1);
+    expect(finalMessage?.role).toBe("assistant");
+    expect(finalMessage?.content).toBe(result.finalResponse);
+  });
+
   // Test 11: SecretRedactor is applied to user messages
   test("SecretRedactor redacts secrets in user messages before storage", async () => {
     const agent = makeAgent();
 
-    const result = await agent.processUserMessage("My API key is sk-abc123def456ghijklmno");
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("My API key is sk-abc123def456ghijklmno"),
+    );
 
     // The redactor should have redacted the API key somewhere in the process
     // The response should NOT contain the raw API key

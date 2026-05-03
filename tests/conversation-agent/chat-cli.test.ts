@@ -2,9 +2,25 @@
 // @kata-agent/conversation-agent — Chat CLI and approval-tools module
 // loading tests
 // ---------------------------------------------------------------------------
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test, mock } from "bun:test";
 import type { ToolContext, ToolResult } from "../../packages/conversation-agent/src/types";
 import { createApprovalTool } from "../../packages/conversation-agent/src/tools/approval-tools";
+
+const readlineHandlers = new Map<string, (...args: unknown[]) => void>();
+const fakeReadline = {
+  prompt: mock(() => undefined),
+  on: mock((event: string, handler: (...args: unknown[]) => void) => {
+    readlineHandlers.set(event, handler);
+  }),
+  close: mock(() => {
+    readlineHandlers.get("close")?.();
+  }),
+};
+const createInterfaceMock = mock(() => fakeReadline);
+
+mock.module("node:readline", () => ({
+  createInterface: createInterfaceMock,
+}));
 
 // ---------------------------------------------------------------------------
 // Test context
@@ -16,6 +32,14 @@ const ctx: ToolContext = {
   yolo: false,
   env: {},
 };
+
+beforeEach(() => {
+  readlineHandlers.clear();
+  fakeReadline.prompt.mockClear();
+  fakeReadline.on.mockClear();
+  fakeReadline.close.mockClear();
+  createInterfaceMock.mockClear();
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -101,6 +125,34 @@ describe("approval tool", () => {
 // ===========================================================================
 
 describe("chat CLI module", () => {
+  test("startChat warns in Chinese and exits when apiKey is empty", async () => {
+    const chatModule = await import("../../apps/cli/src/chat");
+    const originalExit = process.exit;
+    const originalError = console.error;
+    const errors: string[] = [];
+    const exitCodes: Array<string | number | null | undefined> = [];
+
+    process.exit = ((code?: string | number | null | undefined) => {
+      exitCodes.push(code);
+      throw new Error(`process.exit:${code}`);
+    }) as typeof process.exit;
+    console.error = mock((...args: unknown[]) => {
+      errors.push(args.map(String).join(" "));
+    }) as typeof console.error;
+
+    try {
+      expect(() => chatModule.startChat({ apiKey: "" })).toThrow("process.exit:1");
+    } finally {
+      process.exit = originalExit;
+      console.error = originalError;
+    }
+
+    expect(exitCodes).toEqual([1]);
+    expect(errors.join("\n")).toContain("DEEPSEEK_API_KEY");
+    expect(errors.join("\n")).toContain("请先设置");
+    expect(createInterfaceMock).not.toHaveBeenCalled();
+  });
+
   test("chat module can be loaded without error", async () => {
     // Just verify the module imports resolve and its exports are correct
     const chatModule = await import("../../apps/cli/src/chat");
