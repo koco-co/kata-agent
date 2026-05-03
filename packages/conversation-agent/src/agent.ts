@@ -459,8 +459,10 @@ export class ConversationAgent {
       };
 
       for (const tc of toolCalls) {
+        console.log(`🔧 正在执行工具: ${tc.name}...`);
         const toolResult = await this.runtime.execute(tc.name, tc.args, context);
         completedSteps.push(tc.name);
+        console.log(`✅ 工具 ${tc.name} 执行完成。`);
 
         // Redact secrets in tool results
         const redactedSummary = this.redactor.redact(toolResult.summary);

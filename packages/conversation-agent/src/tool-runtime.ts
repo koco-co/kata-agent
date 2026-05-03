@@ -92,10 +92,24 @@ export class ToolRuntime {
 
     // Execute
     try {
-      return await tool.execute(
+      const result = await tool.execute(
         (input ?? {}) as Record<string, unknown>,
         context,
       );
+
+      // Truncate tool output if summary exceeds 50 KB
+      const MAX_SUMMARY_SIZE = 50 * 1024; // 50 KB
+      if (result.summary && Buffer.byteLength(result.summary, "utf-8") > MAX_SUMMARY_SIZE) {
+        const originalBytes = Buffer.byteLength(result.summary, "utf-8");
+        // Truncate to 50 KB at character boundary
+        let truncated = result.summary;
+        while (Buffer.byteLength(truncated, "utf-8") > MAX_SUMMARY_SIZE) {
+          truncated = truncated.slice(0, Math.floor(truncated.length * 0.9));
+        }
+        result.summary = `${truncated}\n\n[output truncated from ${(originalBytes / 1024).toFixed(0)} KB to 50 KB]`;
+      }
+
+      return result;
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : String(err ?? "unknown error");
