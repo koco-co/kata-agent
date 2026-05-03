@@ -49,7 +49,7 @@ export class ConversationAgent {
   // ---- Constructor -------------------------------------------------------
 
   constructor(config: AgentConfig) {
-    this.config = { ...config, maxIterations: config.maxIterations ?? 10 };
+    this.config = { ...config, maxIterations: config.maxIterations ?? 30 };
     this.runtime = new ToolRuntime();
     this.store = new SessionStore(config.sessionDir);
     this.intent = new IntentBias();
@@ -259,7 +259,7 @@ export class ConversationAgent {
     // 5-6. Call provider and loop for tool calls
     const providerConfig = this.getProviderConfig();
     const toolSchema = this.buildToolSchema();
-    const maxIter = this.config.maxIterations ?? 10;
+    const maxIter = this.config.maxIterations ?? 30;
 
     let finalResponse = "";
 

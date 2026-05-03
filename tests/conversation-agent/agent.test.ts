@@ -118,6 +118,7 @@ describe("ConversationAgent", () => {
     expect(agent.enabledToolsets).toEqual(ALL_TOOLSETS);
     expect(agent.config.model).toBe("gpt-4");
     expect(agent.config.provider).toBe("openai");
+    expect(agent.config.maxIterations).toBe(30);
   });
 
   // Test 2: registerTool registers a tool
