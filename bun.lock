@@ -26,6 +26,10 @@
       "name": "@kata-agent/artifact-repo",
       "version": "0.1.0",
     },
+    "packages/conversation-agent": {
+      "name": "@kata-agent/conversation-agent",
+      "version": "0.1.0",
+    },
     "packages/core": {
       "name": "@kata-agent/core",
       "version": "0.1.0",
@@ -73,6 +77,10 @@
       "name": "@kata-agent/plugin-report",
       "version": "0.1.0",
     },
+    "plugins/static-scan": {
+      "name": "@kata-agent/plugin-static-scan",
+      "version": "0.1.0",
+    },
     "plugins/xmind": {
       "name": "@kata-agent/plugin-xmind",
       "version": "0.1.0",
@@ -88,6 +96,8 @@
     "@kata-agent/artifact-repo": ["@kata-agent/artifact-repo@workspace:packages/artifact-repo"],
 
     "@kata-agent/cli": ["@kata-agent/cli@workspace:apps/cli"],
+
+    "@kata-agent/conversation-agent": ["@kata-agent/conversation-agent@workspace:packages/conversation-agent"],
 
     "@kata-agent/core": ["@kata-agent/core@workspace:packages/core"],
 
@@ -106,6 +116,8 @@
     "@kata-agent/plugin-report": ["@kata-agent/plugin-report@workspace:plugins/report"],
 
     "@kata-agent/plugin-runtime": ["@kata-agent/plugin-runtime@workspace:packages/plugin-runtime"],
+
+    "@kata-agent/plugin-static-scan": ["@kata-agent/plugin-static-scan@workspace:plugins/static-scan"],
 
     "@kata-agent/plugin-xmind": ["@kata-agent/plugin-xmind@workspace:plugins/xmind"],
 

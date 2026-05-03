@@ -3,6 +3,8 @@ import { describe, expect, test } from "bun:test";
 import { callProvider } from "../../packages/conversation-agent/src/provider";
 import type { ChatMessage } from "../../packages/conversation-agent/src/types";
 
+const hasApiKey = !!process.env.DEEPSEEK_API_KEY;
+
 const config = {
   model: "deepseek-v4-flash",
   baseUrl: "https://api.deepseek.com",
@@ -12,7 +14,7 @@ const config = {
   contextLength: 1_048_576,
 };
 
-describe("Real DeepSeek Provider", () => {
+describe.skipIf(!hasApiKey)("Real DeepSeek Provider", () => {
   test("simple chat completion", async () => {
     const sysPrompt = "You are a helpful assistant. Keep responses under 50 chars.";
     const messages: ChatMessage[] = [{ role: "user", content: "Say hello" }];

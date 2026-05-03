@@ -6,6 +6,9 @@ import { describe, expect, test, mock, afterEach, beforeEach } from "bun:test";
 import { defaultProviderConfig, callProvider } from "../../packages/conversation-agent/src/provider";
 import type { ChatMessage } from "../../packages/conversation-agent/src/types";
 
+// Save original fetch so we can restore it
+const ORIGINAL_FETCH = global.fetch;
+
 // ---------------------------------------------------------------------------
 // Helper: mock Response
 // ---------------------------------------------------------------------------
@@ -96,6 +99,8 @@ describe("callProvider", () => {
 
   afterEach(() => {
     mock.restore();
+    // Restore global.fetch to original
+    global.fetch = ORIGINAL_FETCH;
   });
 
   test("returns content from provider response", async () => {
@@ -104,7 +109,7 @@ describe("callProvider", () => {
         choices: [{ message: { content: "Hello world" }, finish_reason: "stop" }],
         usage: { prompt_tokens: 10, completion_tokens: 5 },
       })
-    );
+    ) as unknown as typeof fetch;
 
     const result = await callProvider(config, systemPrompt, messages);
 
@@ -124,7 +129,7 @@ describe("callProvider", () => {
         choices: [{ message: { content: "" }, finish_reason: "stop" }],
         usage: { prompt_tokens: 0, completion_tokens: 0 },
       });
-    });
+    }) as unknown as typeof fetch;
 
     await callProvider(config, systemPrompt, messages);
 
@@ -141,7 +146,7 @@ describe("callProvider", () => {
         choices: [{ message: { content: "" }, finish_reason: "stop" }],
         usage: { prompt_tokens: 0, completion_tokens: 0 },
       });
-    });
+    }) as unknown as typeof fetch;
 
     const tools = [{ type: "function", function: { name: "test_tool", description: "test", parameters: {} } }];
     await callProvider(config, systemPrompt, messages, tools);
@@ -170,7 +175,7 @@ describe("callProvider", () => {
         }],
         usage: { prompt_tokens: 20, completion_tokens: 10 },
       })
-    );
+    ) as unknown as typeof fetch;
 
     const result = await callProvider(config, systemPrompt, messages);
 
@@ -191,7 +196,7 @@ describe("callProvider", () => {
         choices: [{ message: { content: "OK" }, finish_reason: "stop" }],
         usage: { prompt_tokens: 5, completion_tokens: 3 },
       });
-    });
+    }) as unknown as typeof fetch;
 
     await callProvider(config, systemPrompt, messages);
 
@@ -206,7 +211,7 @@ describe("callProvider", () => {
         choices: [{ message: { content: "OK" }, finish_reason: "stop" }],
         usage: { prompt_tokens: 0, completion_tokens: 0 },
       });
-    });
+    }) as unknown as typeof fetch;
 
     await callProvider(config, systemPrompt, messages);
     expect(capturedUrl).toBe("https://api.test.com/v1/chat/completions");
@@ -215,7 +220,7 @@ describe("callProvider", () => {
   test("throws on HTTP error", async () => {
     global.fetch = mock(async () =>
       new Response('{"error": {"message": "Invalid API key"}}', { status: 401, statusText: "Unauthorized" })
-    );
+    ) as unknown as typeof fetch;
 
     const promise = callProvider(config, systemPrompt, messages);
     await expect(promise).rejects.toThrow("Provider error: 401");
@@ -227,7 +232,7 @@ describe("callProvider", () => {
         choices: [],
         usage: { prompt_tokens: 0, completion_tokens: 0 },
       })
-    );
+    ) as unknown as typeof fetch;
 
     const promise = callProvider(config, systemPrompt, messages);
     await expect(promise).rejects.toThrow("no choices");

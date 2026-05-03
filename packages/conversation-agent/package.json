@@ -2,5 +2,12 @@
   "name": "@kata-agent/conversation-agent",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@kata-agent/core": "workspace:*",
+    "@kata-agent/domain": "workspace:*",
+    "@kata-agent/workflow-engine": "workspace:*",
+    "@kata-agent/artifact-repo": "workspace:*",
+    "@kata-agent/knowledge-repo": "workspace:*"
+  }
 }

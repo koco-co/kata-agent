@@ -138,13 +138,13 @@ describe("SessionState type", () => {
     const state: SessionState = {
       sessionId: "sess-123",
       messages: [],
-      enabledToolsets: new Set<"shell">(["shell"]),
+      enabledToolsets: ["shell"],
       yolo: false,
     };
 
     expect(state.sessionId).toBe("sess-123");
     expect(state.messages).toBeArray();
-    expect(state.enabledToolsets).toBeInstanceOf(Set);
+    expect(state.enabledToolsets).toBeArray();
     expect(state.yolo).toBeBoolean();
 
     // Optional fields
@@ -157,7 +157,7 @@ describe("SessionState type", () => {
     const state: SessionState = {
       sessionId: "sess-456",
       messages: [],
-      enabledToolsets: new Set(["files", "shell"]),
+      enabledToolsets: ["files", "shell"],
       yolo: true,
       project: "MyApp",
       feature: "Login flow",
@@ -185,11 +185,13 @@ describe("ChatMessage union type", () => {
     const msg: ChatMessage = {
       role: "assistant",
       content: "Calling tool...",
-      toolCalls: [{ name: "read-file", arguments: { path: "test.ts" } }],
+      toolCalls: [{ id: "call-1", name: "read-file", args: { path: "test.ts" } }],
     };
     expect(msg.role).toBe("assistant");
-    expect(msg.toolCalls).toBeArray();
-    expect(msg.toolCalls![0].name).toBe("read-file");
+    expect("toolCalls" in msg && msg.toolCalls).toBeTruthy();
+    if ("toolCalls" in msg && msg.toolCalls) {
+      expect(msg.toolCalls[0].name).toBe("read-file");
+    }
   });
 
   test("ToolResultMessage shape", () => {

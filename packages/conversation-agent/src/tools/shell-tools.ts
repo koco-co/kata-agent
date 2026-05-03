@@ -38,6 +38,10 @@ function normalise(command: string): string {
 const DANGEROUS_PATTERNS: RegExp[] = [
   // rm -rf / or rm -rf /* (delete root filesystem)
   /\brm\s+(-rf|-\w*r\w*f\w*|-\w*f\w*r\w*)\s+\//,
+  // rm -rf ~ (delete home directory)
+  /\brm\s+(-rf|-\w*r\w*f\w*|-\w*f\w*r\w*)\s+~/,
+  // rm -rf * or rm -rf . (delete all in current directory)
+  /\brm\s+(-rf|-\w*r\w*f\w*|-\w*f\w*r\w*)\s+[*.]\s*$/,
   // sudo — privilege escalation
   /\bsudo\b/,
   // chmod 777 (or chmod -R 777, chmod 777 /path)
@@ -50,6 +54,11 @@ const DANGEROUS_PATTERNS: RegExp[] = [
   /\bgit\s+push\s+(--force|-f)\b/,
   // eval — arbitrary code execution
   /\beval\b/,
+  // dd — destructive disk writes (e.g. dd if=... of=/dev/...)
+  /\bdd\s+if=.*\s+of=\/dev\//,
+  // mkfs / mke2fs / mkfs.* — filesystem creation on devices
+  /\bmkfs\b/,
+  /\bmke2fs\b/,
 ];
 
 /**

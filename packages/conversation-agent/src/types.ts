@@ -101,7 +101,7 @@ export interface SessionState {
   project?: string;
   feature?: string;
   recentRuns?: string[];
-  enabledToolsets: Set<ToolsetName>;
+  enabledToolsets: ToolsetName[];
   yolo: boolean;
 }
 
