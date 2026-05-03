@@ -533,16 +533,15 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("safe");
   });
 
-  test("encourages batching independent tool calls", () => {
+  test("encourages delegating execution to Codex via codex_exec", () => {
     const tools: ConversationTool[] = [
-      makeTool({ name: "file_read", toolset: "files", permission: "safe" }),
-      makeTool({ name: "file_list", toolset: "files", permission: "safe" }),
+      makeTool({ name: "codex_exec", toolset: "delegation", permission: "safe" }),
     ];
 
-    const prompt = buildSystemPrompt(tools, ["files"]);
+    const prompt = buildSystemPrompt(tools, ["delegation"]);
 
-    expect(prompt).toContain("批量调用独立工具");
-    expect(prompt).toContain("一次性读取多个文件");
-    expect(prompt).toContain("减少迭代次数");
+    expect(prompt).toContain("codex_exec");
+    expect(prompt).toContain("调度官");
+    expect(prompt).toContain("委派");
   });
 });
