@@ -77,6 +77,7 @@ function makeAgent(
     sessionDir: string;
     workspaceRoot: string;
     tools: ConversationTool[];
+    maxIterations: number;
   }> = {},
 ): ConversationAgent {
   const dir = overrides.sessionDir ?? "/tmp/test-sessions";
@@ -87,6 +88,7 @@ function makeAgent(
     model: "test-model",
     provider: "test-provider",
     apiKey: "test-key",
+    maxIterations: overrides.maxIterations,
   });
   if (overrides.tools) {
     for (const t of overrides.tools) {
@@ -322,6 +324,38 @@ describe("ConversationAgent", () => {
     const finalMessage = result.messages.at(-1);
     expect(finalMessage?.role).toBe("assistant");
     expect(finalMessage?.content).toBe(result.finalResponse);
+  });
+
+  test("processUserMessage returns actionable Chinese message when max iterations are reached", async () => {
+    mockCallProvider.mockImplementation(async () => ({
+      ...mockProviderResponse(),
+      content: "",
+      finishReason: "tool_calls" as const,
+      toolCalls: [
+        {
+          id: `call_${randomUUID()}`,
+          name: "test-tool",
+          args: {},
+        },
+      ],
+    }));
+
+    const agent = makeAgent({
+      maxIterations: 1,
+      tools: [makeTool({ name: "test-tool", toolset: "files" })],
+    });
+
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("Use the tool repeatedly"),
+    );
+
+    expect(result.finalResponse).toContain("任务尚未完成");
+    expect(result.finalResponse).toContain("已达到最大迭代次数（1）");
+    expect(result.finalResponse).toContain("/yolo");
+    expect(result.finalResponse).toContain("已完成步骤");
+    expect(result.finalResponse).toContain("test-tool");
+    expect(result.finalResponse).toContain("未完成步骤");
+    expect(result.finalResponse).toContain("模型仍未给出最终回复");
   });
 
   // Test 11: SecretRedactor is applied to user messages

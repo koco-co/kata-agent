@@ -125,6 +125,35 @@ export class ConversationAgent {
     ].join("\n");
   }
 
+  private formatMaxIterationsResponse(
+    maxIter: number,
+    completedSteps: string[],
+  ): string {
+    const lines: string[] = [
+      `任务尚未完成：已达到最大迭代次数（${maxIter}），模型仍未给出最终回复。`,
+      "",
+      "建议：",
+      "1. 将任务拆成更小的步骤后继续执行。",
+      "2. 如果任务卡在命令执行、文件写入或高权限工具上，请确认风险后启用 /yolo 模式再继续。",
+      "",
+      "已完成步骤：",
+    ];
+
+    if (completedSteps.length === 0) {
+      lines.push("- 暂无可列出的已完成工具步骤。");
+    } else {
+      for (const step of completedSteps) {
+        lines.push(`- 已执行工具：${step}`);
+      }
+    }
+
+    lines.push("");
+    lines.push("未完成步骤：");
+    lines.push("- 模型仍未给出最终回复，可能还有后续工具调用或总结步骤未完成。");
+
+    return lines.join("\n");
+  }
+
   // ---- Tool Registration -------------------------------------------------
 
   /**
@@ -262,6 +291,7 @@ export class ConversationAgent {
     const maxIter = this.config.maxIterations ?? 30;
 
     let finalResponse = "";
+    const completedSteps: string[] = [];
 
     for (let iteration = 0; iteration < maxIter; iteration++) {
       // Read messages from session store
@@ -345,6 +375,7 @@ export class ConversationAgent {
 
       for (const tc of toolCalls) {
         const toolResult = await this.runtime.execute(tc.name, tc.args, context);
+        completedSteps.push(tc.name);
 
         // Redact secrets in tool results
         const redactedSummary = this.redactor.redact(toolResult.summary);
@@ -360,7 +391,7 @@ export class ConversationAgent {
     }
 
     // Max iterations reached without final response
-    finalResponse = `I've reached the maximum number of iterations (${maxIter}) processing your request. Some operations may not have completed. Please try breaking your request into smaller steps.`;
+    finalResponse = this.formatMaxIterationsResponse(maxIter, completedSteps);
 
     const finalMsg: ChatMessage = {
       role: "assistant",
