@@ -31,8 +31,13 @@ const EXTERNAL_EFFECT_KEYWORDS = [
 ];
 
 const WORKFLOW_KEYWORDS: Array<{ regex: RegExp; workflow: string }> = [
+  { regex: /回归测试|跑.*测试|运行.*测试|test\s*run|regression/i, workflow: "test-run" },
   { regex: /测试用例|test\s*case/i, workflow: "test-case-gen" },
+  { regex: /生成.*脚本|ui\s*script|playwright\s*script/i, workflow: "ui-script-gen" },
+  { regex: /静态扫描|测试风险|scan/i, workflow: "test-scan" },
   { regex: /\bbug\b|缺陷/, workflow: "bug-report-gen" },
+  { regex: /测试报告|执行报告|report/i, workflow: "test-report" },
+  { regex: /xmind|脑图/i, workflow: "test-export-xmind" },
   { regex: /需求|requirement/i, workflow: "requirement-spec-gen" },
 ];
 
@@ -44,10 +49,39 @@ const URL_PATTERN = /https?:\/\/[^\s'"<>,]+/i;
 
 const PROJECT_PATTERN = /项目\s*([^\s，。,\.]{1,20})/;
 
+const FEATURE_MODULE_PATTERN = /([\u4e00-\u9fffA-Za-z0-9_-]{2,30})(?:模块|功能)/;
+
 // Chinese pattern: text BEFORE 功能 (e.g. "登录功能" → "登录")
 // Require at least 2 Chinese characters to avoid matching prepositions
 const FEATURE_CHINESE_PATTERN = /([\u4e00-\u9fff]{2,30})功能/;
 const FEATURE_ENGLISH_PATTERN = /feature\s+([^\s，。,\.:：]{1,30})/i;
+
+function normalizeFeatureCandidate(candidate: string): string {
+  const stopWords = [
+    "一下",
+    "帮我",
+    "请",
+    "为",
+    "对",
+    "把",
+    "将",
+    "运行",
+    "执行",
+    "跑",
+    "测试",
+    "的",
+  ];
+  let normalized = candidate;
+
+  for (const word of stopWords) {
+    const index = normalized.lastIndexOf(word);
+    if (index >= 0) {
+      normalized = normalized.slice(index + word.length);
+    }
+  }
+
+  return normalized.trim() || candidate;
+}
 
 // ---- IntentBias class ----------------------------------------------------
 
@@ -93,13 +127,18 @@ export class IntentBias {
     }
 
     // 5. Feature extraction
-    const featureChineseMatch = text.match(FEATURE_CHINESE_PATTERN);
-    if (featureChineseMatch?.[1]) {
-      result.feature = featureChineseMatch[1];
+    const featureModuleMatch = text.match(FEATURE_MODULE_PATTERN);
+    if (featureModuleMatch?.[1]) {
+      result.feature = normalizeFeatureCandidate(featureModuleMatch[1]);
     } else {
-      const featureEnglishMatch = text.match(FEATURE_ENGLISH_PATTERN);
-      if (featureEnglishMatch?.[1]) {
-        result.feature = featureEnglishMatch[1];
+      const featureChineseMatch = text.match(FEATURE_CHINESE_PATTERN);
+      if (featureChineseMatch?.[1]) {
+        result.feature = featureChineseMatch[1];
+      } else {
+        const featureEnglishMatch = text.match(FEATURE_ENGLISH_PATTERN);
+        if (featureEnglishMatch?.[1]) {
+          result.feature = featureEnglishMatch[1];
+        }
       }
     }
 

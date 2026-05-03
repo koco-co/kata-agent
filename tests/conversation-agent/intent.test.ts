@@ -41,6 +41,25 @@ describe("IntentBias", () => {
     expect(result.workflow).toBe("requirement-spec-gen");
   });
 
+  test("detects test-run workflow from regression wording", () => {
+    const result = analyzer.analyze("帮我跑一下登录模块的回归测试");
+
+    expect(result.workflow).toBe("test-run");
+    expect(result.feature).toBe("登录");
+  });
+
+  test("detects static scan workflow", () => {
+    const result = analyzer.analyze("扫描这个分支的测试风险");
+
+    expect(result.workflow).toBe("test-scan");
+  });
+
+  test("detects report workflow", () => {
+    const result = analyzer.analyze("整理这次执行的测试报告");
+
+    expect(result.workflow).toBe("test-report");
+  });
+
   // -----------------------------------------------------------------------
   // Test 2: Detect resume intent from "继续刚才 rule-config 那个任务"
   // -----------------------------------------------------------------------
@@ -111,7 +130,7 @@ describe("IntentBias", () => {
   // Test 4: Return empty analysis for non-workflow queries
   // -----------------------------------------------------------------------
   test("returns { workflow: undefined } for non-workflow queries", () => {
-    const result = analyzer.analyze("跑全量测试");
+    const result = analyzer.analyze("整理项目资料");
     expect(result.workflow).toBeUndefined();
   });
 
