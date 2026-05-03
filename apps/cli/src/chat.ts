@@ -14,6 +14,11 @@ import { createWorkflowTools } from "../../../packages/conversation-agent/src/to
 import { createArtifactTools } from "../../../packages/conversation-agent/src/tools/artifact-tools";
 import { createKnowledgeTools } from "../../../packages/conversation-agent/src/tools/knowledge-tools";
 import { createApprovalTool } from "../../../packages/conversation-agent/src/tools/approval-tools";
+import {
+  createTestingTools,
+  discoverTestingWorkspace,
+} from "../../../packages/conversation-agent/src/testing";
+import { createChatTestingActionBridge } from "./chat-testing-actions";
 
 const ANSI_GRAY = "\x1b[90m";
 const ANSI_RESET = "\x1b[0m";
@@ -114,6 +119,8 @@ export function startChat(options: ChatOptions = {}): void {
   ensureDir(sessionDir);
   ensureDir(approvalDir);
 
+  const testingWorkspace = discoverTestingWorkspace(workspaceRoot);
+
   // Create the agent
   const agent = new ConversationAgent({
     sessionDir,
@@ -123,6 +130,7 @@ export function startChat(options: ChatOptions = {}): void {
     apiKey,
     apiBase,
     stream,
+    testingWorkspace,
   });
 
   // ---- Register all tools ----
@@ -159,6 +167,14 @@ export function startChat(options: ChatOptions = {}): void {
   const approvalTool = createApprovalTool(approvalDir);
   agent.registerTool(approvalTool);
 
+  // Testing tools (test.run, test.gen_cases, test.scan, ...)
+  const testingTools = createTestingTools(
+    createChatTestingActionBridge({ workspaceRoot }),
+  );
+  for (const tool of testingTools) {
+    agent.registerTool(tool);
+  }
+
   // ---- Set up readline interface ----
 
   const rl = readline.createInterface({
@@ -169,12 +185,15 @@ export function startChat(options: ChatOptions = {}): void {
 
   console.log("");
   console.log("╔══════════════════════════════════════════╗");
-  console.log("║    Kata Agent Chat — NL Runtime v0.5    ║");
+  console.log("║    Kata Agent Chat — Testing CLI v0.6    ║");
   console.log("╚══════════════════════════════════════════╝");
   console.log("");
   console.log(`  Workspace : ${workspaceRoot}`);
   console.log(`  Model     : ${model} (${provider})`);
   console.log(`  Session   : ${agent.sessionId}`);
+  console.log(`  Features  : ${testingWorkspace.featureCount}`);
+  console.log(`  Specs     : ${testingWorkspace.specCount}`);
+  console.log(`  Reports   : ${testingWorkspace.reportCount}`);
   console.log("");
   console.log("  Type /help for available commands, /exit to quit.");
   console.log("");

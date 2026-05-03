@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 import { beforeEach, describe, expect, test, mock } from "bun:test";
 import type { ToolContext, ToolResult } from "../../packages/conversation-agent/src/types";
+import { createTestingTools } from "../../packages/conversation-agent/src/testing/tools";
 import { createApprovalTool } from "../../packages/conversation-agent/src/tools/approval-tools";
 
 const readlineHandlers = new Map<string, (...args: unknown[]) => void>();
@@ -125,6 +126,42 @@ describe("approval tool", () => {
 // ===========================================================================
 
 describe("chat CLI module", () => {
+  test("testing tools expose conversation-agent compatible metadata", () => {
+    const tools = createTestingTools({
+      executeAction: async (actionId) => ({
+        ok: true,
+        summary: `executed ${actionId}`,
+        data: { actionId },
+      }),
+    });
+
+    expect(tools.find((tool) => tool.name === "test.run")?.permission).toBe("command");
+    expect(tools.find((tool) => tool.name === "test.run")?.toolset).toBe("qa-workflows");
+    expect(tools.find((tool) => tool.name === "test.gen_cases")?.permission).toBe("workspace-write");
+  });
+
+  test("startChat prints testing CLI banner with workspace counts", async () => {
+    const chatModule = await import("../../apps/cli/src/chat");
+    const originalLog = console.log;
+    const logs: string[] = [];
+
+    console.log = mock((...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    }) as typeof console.log;
+
+    try {
+      chatModule.startChat({ apiKey: "test-key", workspaceRoot: ctx.workspaceRoot });
+    } finally {
+      console.log = originalLog;
+    }
+
+    const output = logs.join("\n");
+    expect(output).toContain("Kata Agent Chat — Testing CLI v0.6");
+    expect(output).toContain("Features  :");
+    expect(output).toContain("Specs     :");
+    expect(output).toContain("Reports   :");
+  });
+
   test("formatChatResponseForTerminal prints reasoning before final response in gray", async () => {
     const chatModule = await import("../../apps/cli/src/chat");
 
