@@ -120,6 +120,27 @@ describe("callProvider", () => {
     expect(result.toolCalls).toBeUndefined();
   });
 
+  test("captures reasoning content from provider response", async () => {
+    global.fetch = mock(async () =>
+      mockJsonResponse({
+        choices: [
+          {
+            message: {
+              content: "Answer",
+              reasoning_content: "Internal reasoning trace",
+            },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5 },
+      })
+    ) as unknown as typeof fetch;
+
+    const result = await callProvider(config, systemPrompt, messages);
+
+    expect(result.reasoningContent).toBe("Internal reasoning trace");
+  });
+
   test("passes auth header", async () => {
     let capturedHeaders: Record<string, string> = {};
 
@@ -159,6 +180,54 @@ describe("callProvider", () => {
     expect(capturedBody.tools).toEqual(tools);
     expect(capturedBody.tool_choice).toBe("auto");
     expect(capturedBody.max_tokens).toBe(4096);
+  });
+
+  test("sends reasoning content for assistant messages", async () => {
+    let capturedBody: any = null;
+
+    global.fetch = mock(async (_url: string, opts: any) => {
+      capturedBody = JSON.parse(opts.body);
+      return mockJsonResponse({
+        choices: [{ message: { content: "OK" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 0, completion_tokens: 0 },
+      });
+    }) as unknown as typeof fetch;
+
+    const assistantMessages: ChatMessage[] = [
+      {
+        role: "assistant",
+        content: "Calling tool",
+        reasoningContent: "Need current files before answering",
+        toolCalls: [
+          {
+            id: "call_1",
+            name: "file_list",
+            args: { path: "." },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        toolCallId: "call_1",
+        content: "README.md",
+      },
+      {
+        role: "assistant",
+        content: "Final answer",
+        reasoningContent: "Now respond from tool output",
+        isFinal: true,
+        toolCalls: [],
+      },
+    ];
+
+    await callProvider(config, systemPrompt, assistantMessages);
+
+    expect(capturedBody.messages[1].reasoning_content).toBe(
+      "Need current files before answering",
+    );
+    expect(capturedBody.messages[3].reasoning_content).toBe(
+      "Now respond from tool output",
+    );
   });
 
   test("parses tool calls from response", async () => {

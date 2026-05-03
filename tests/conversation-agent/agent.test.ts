@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, mock } from "bun:test";
 import { ConversationAgent } from "../../packages/conversation-agent/src/agent";
 import { buildSystemPrompt } from "../../packages/conversation-agent/src/prompts";
 import type { ConversationTool, ToolsetName } from "../../packages/conversation-agent/src/types";
+import type { ProviderResponse } from "../../packages/conversation-agent/src/provider";
 import { ALL_TOOLSETS } from "../../packages/conversation-agent/src/types";
 import { randomUUID } from "crypto";
 
@@ -9,7 +10,7 @@ import { randomUUID } from "crypto";
 // Mock the provider so tests don't hit the real API
 // ---------------------------------------------------------------------------
 
-function mockProviderResponse() {
+function mockProviderResponse(): ProviderResponse {
   return {
     content: "Mock response from provider",
     inputTokens: 10,
@@ -230,6 +231,63 @@ describe("ConversationAgent", () => {
     expect(result.finalResponse).toBeDefined();
     expect(result.finalResponse.length).toBeGreaterThan(0);
     expect(result.messages).toBeDefined();
+  });
+
+  test("processUserMessage stores provider reasoning content on final responses", async () => {
+    mockCallProvider.mockImplementationOnce(async () => ({
+      ...mockProviderResponse(),
+      reasoningContent: "Reasoning returned by provider",
+    }));
+
+    const agent = makeAgent();
+
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, I need help"),
+    );
+
+    const finalMessage = result.messages.at(-1);
+    expect(finalMessage?.role).toBe("assistant");
+    expect(finalMessage).toHaveProperty(
+      "reasoningContent",
+      "Reasoning returned by provider",
+    );
+  });
+
+  test("processUserMessage stores provider reasoning content on tool call responses", async () => {
+    mockCallProvider
+      .mockImplementationOnce(async () => ({
+        ...mockProviderResponse(),
+        content: "",
+        finishReason: "tool_calls" as const,
+        reasoningContent: "Need to call the tool first",
+        toolCalls: [
+          {
+            id: "call_1",
+            name: "test-tool",
+            args: {},
+          },
+        ],
+      }))
+      .mockImplementationOnce(async () => ({
+        ...mockProviderResponse(),
+        content: "Done",
+      }));
+
+    const agent = makeAgent({
+      tools: [makeTool({ name: "test-tool", toolset: "files" })],
+    });
+
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("Use the tool"),
+    );
+
+    const toolCallMessage = result.messages.find(
+      (msg) => msg.role === "assistant" && "toolCalls" in msg && msg.toolCalls.length > 0,
+    );
+    expect(toolCallMessage).toHaveProperty(
+      "reasoningContent",
+      "Need to call the tool first",
+    );
   });
 
   test("processUserMessage prints loading messages around provider call", async () => {

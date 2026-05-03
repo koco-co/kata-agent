@@ -44,6 +44,7 @@ export function defaultProviderConfig(): ProviderConfig {
 
 export interface ProviderResponse {
   content: string;
+  reasoningContent?: string;
   inputTokens: number;
   outputTokens: number;
   finishReason: "stop" | "length" | "tool_calls" | "error";
@@ -120,6 +121,7 @@ export async function callProvider(
 
   return {
     content: choice.message?.content ?? "",
+    reasoningContent: choice.message?.reasoning_content ?? undefined,
     inputTokens: json.usage?.prompt_tokens ?? 0,
     outputTokens: json.usage?.completion_tokens ?? 0,
     finishReason: choice.finish_reason ?? "error",
@@ -137,21 +139,28 @@ function serializeMessage(msg: ChatMessage): Record<string, unknown> {
   }
 
   if (msg.role === "assistant") {
-    if ("toolCalls" in msg && msg.toolCalls && msg.toolCalls.length > 0) {
-      return {
-        role: "assistant",
-        content: msg.content || null,
-        tool_calls: msg.toolCalls.map((tc) => ({
-          id: tc.id,
-          type: "function",
-          function: {
-            name: tc.name,
-            arguments: JSON.stringify(tc.args ?? {}),
-          },
-        })),
-      };
+    const serialized: Record<string, unknown> = {
+      role: "assistant",
+      content: msg.content,
+    };
+
+    if (msg.reasoningContent !== undefined) {
+      serialized.reasoning_content = msg.reasoningContent;
     }
-    return { role: "assistant", content: msg.content };
+
+    if ("toolCalls" in msg && msg.toolCalls && msg.toolCalls.length > 0) {
+      serialized.content = msg.content || null;
+      serialized.tool_calls = msg.toolCalls.map((tc) => ({
+        id: tc.id,
+        type: "function",
+        function: {
+          name: tc.name,
+          arguments: JSON.stringify(tc.args ?? {}),
+        },
+      }));
+    }
+
+    return serialized;
   }
 
   if (msg.role === "tool") {

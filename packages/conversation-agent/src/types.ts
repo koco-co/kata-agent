@@ -61,6 +61,7 @@ export interface UserMessage {
 export interface ToolCallMessage {
   role: "assistant";
   content: string;
+  reasoningContent?: string;
   toolCalls: Array<{
     id: string;
     name: string;
@@ -81,6 +82,7 @@ export interface ToolResultMessage {
 export interface FinalMessage {
   role: "assistant";
   content: string;
+  reasoningContent?: string;
   isFinal: true;
   toolCalls: [];
 }

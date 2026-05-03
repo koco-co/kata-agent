@@ -185,9 +185,11 @@ describe("ChatMessage union type", () => {
     const msg: ChatMessage = {
       role: "assistant",
       content: "Calling tool...",
+      reasoningContent: "Need to inspect the file",
       toolCalls: [{ id: "call-1", name: "read-file", args: { path: "test.ts" } }],
     };
     expect(msg.role).toBe("assistant");
+    expect(msg.reasoningContent).toBe("Need to inspect the file");
     expect("toolCalls" in msg && msg.toolCalls).toBeTruthy();
     if ("toolCalls" in msg && msg.toolCalls) {
       expect(msg.toolCalls[0].name).toBe("read-file");
@@ -208,10 +210,12 @@ describe("ChatMessage union type", () => {
     const msg: ChatMessage = {
       role: "assistant",
       content: "Here is the final answer",
+      reasoningContent: "The available context supports this answer",
       isFinal: true,
       toolCalls: [],
     };
     expect(msg.role).toBe("assistant");
+    expect(msg.reasoningContent).toBe("The available context supports this answer");
     expect(msg.isFinal).toBe(true);
   });
 });

@@ -306,6 +306,9 @@ export class ConversationAgent {
         const finalMsg: ChatMessage = {
           role: "assistant",
           content: finalResponse,
+          ...(providerResult.reasoningContent !== undefined
+            ? { reasoningContent: providerResult.reasoningContent }
+            : {}),
           isFinal: true,
           toolCalls: [],
         };
@@ -321,6 +324,9 @@ export class ConversationAgent {
       const assistantMsg: ChatMessage = {
         role: "assistant",
         content: providerResult.content,
+        ...(providerResult.reasoningContent !== undefined
+          ? { reasoningContent: providerResult.reasoningContent }
+          : {}),
         toolCalls: toolCalls.map(tc => ({
           id: tc.id,
           name: tc.name,
