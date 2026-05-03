@@ -15,6 +15,9 @@ import { createArtifactTools } from "../../../packages/conversation-agent/src/to
 import { createKnowledgeTools } from "../../../packages/conversation-agent/src/tools/knowledge-tools";
 import { createApprovalTool } from "../../../packages/conversation-agent/src/tools/approval-tools";
 
+const ANSI_GRAY = "\x1b[90m";
+const ANSI_RESET = "\x1b[0m";
+
 // ---------------------------------------------------------------------------
 // ChatOptions
 // ---------------------------------------------------------------------------
@@ -26,6 +29,11 @@ export interface ChatOptions {
   apiKey?: string;
   apiBase?: string;
   stream?: boolean;
+}
+
+export interface TerminalChatResponse {
+  finalResponse: string;
+  reasoningContent?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,6 +48,22 @@ function ensureDir(dir: string): void {
 
 function readBooleanEnv(value: string | undefined): boolean {
   return value === "1" || value?.toLowerCase() === "true";
+}
+
+export function formatChatResponseForTerminal(
+  result: TerminalChatResponse,
+): string {
+  const reasoning = result.reasoningContent?.trim();
+  if (!reasoning) {
+    return result.finalResponse;
+  }
+
+  return [
+    `${ANSI_GRAY}🤔 模型推理过程：`,
+    reasoning,
+    "---",
+    `${ANSI_RESET}${result.finalResponse}`,
+  ].join("\n");
 }
 
 /**
@@ -185,19 +209,45 @@ export function startChat(options: ChatOptions = {}): void {
     // Process user message through the agent pipeline
     try {
       let streamedTokenCount = 0;
+      let streamedReasoningTokenCount = 0;
+      let reasoningBlockOpen = false;
+      let finalContentStarted = false;
+
+      const closeReasoningBlock = () => {
+        if (reasoningBlockOpen && !finalContentStarted) {
+          process.stdout.write(`\n---\n${ANSI_RESET}`);
+          finalContentStarted = true;
+        }
+      };
+
       const result = await agent.processUserMessage(trimmed, {
         onStreamToken: stream
           ? (token: string) => {
+              closeReasoningBlock();
               streamedTokenCount++;
+              process.stdout.write(token);
+            }
+          : undefined,
+        onReasoningToken: stream
+          ? (token: string) => {
+              if (!reasoningBlockOpen) {
+                process.stdout.write(`\n${ANSI_GRAY}🤔 模型推理过程：\n`);
+                reasoningBlockOpen = true;
+              }
+              streamedReasoningTokenCount++;
               process.stdout.write(token);
             }
           : undefined,
       });
 
-      if (stream && streamedTokenCount > 0) {
+      if (stream && (streamedTokenCount > 0 || streamedReasoningTokenCount > 0)) {
+        closeReasoningBlock();
+        if (streamedTokenCount === 0 && result.finalResponse.length > 0) {
+          process.stdout.write(result.finalResponse);
+        }
         console.log("\n");
       } else {
-        console.log(`\n${result.finalResponse}\n`);
+        console.log(`\n${formatChatResponseForTerminal(result)}\n`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

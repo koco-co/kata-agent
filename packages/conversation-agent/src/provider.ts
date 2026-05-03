@@ -17,6 +17,7 @@ export interface ProviderConfig {
   contextLength?: number;
   stream?: boolean;
   onStreamToken?: (token: string) => void;
+  onReasoningToken?: (token: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +102,11 @@ export async function callProvider(
   }
 
   if (config.stream) {
-    return parseStreamingResponse(response, config.onStreamToken);
+    return parseStreamingResponse(
+      response,
+      config.onStreamToken,
+      config.onReasoningToken,
+    );
   }
 
   const json: any = await response.json();
@@ -146,6 +151,7 @@ function parseProviderJson(json: any): ProviderResponse {
 async function parseStreamingResponse(
   response: Response,
   onStreamToken?: (token: string) => void,
+  onReasoningToken?: (token: string) => void,
 ): Promise<ProviderResponse> {
   if (!response.body) {
     throw new Error("Provider returned an empty streaming response body");
@@ -192,6 +198,7 @@ async function parseStreamingResponse(
       delta.reasoning_content.length > 0
     ) {
       reasoningContent += delta.reasoning_content;
+      onReasoningToken?.(delta.reasoning_content);
     }
 
     if (Array.isArray(delta.tool_calls)) {

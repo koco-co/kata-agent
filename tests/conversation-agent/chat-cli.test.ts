@@ -125,6 +125,22 @@ describe("approval tool", () => {
 // ===========================================================================
 
 describe("chat CLI module", () => {
+  test("formatChatResponseForTerminal prints reasoning before final response in gray", async () => {
+    const chatModule = await import("../../apps/cli/src/chat");
+
+    const formatted = chatModule.formatChatResponseForTerminal({
+      finalResponse: "最终答复",
+      reasoningContent: "先检查上下文",
+    });
+
+    expect(formatted).toContain("\x1b[90m");
+    expect(formatted).toContain("🤔 模型推理过程：\n先检查上下文\n---\n");
+    expect(formatted.indexOf("先检查上下文")).toBeLessThan(
+      formatted.indexOf("最终答复"),
+    );
+    expect(formatted.trimEnd()).toEndWith("最终答复");
+  });
+
   test("startChat warns in Chinese and exits when apiKey is empty", async () => {
     const chatModule = await import("../../apps/cli/src/chat");
     const originalExit = process.exit;

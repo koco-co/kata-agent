@@ -258,6 +258,21 @@ describe("ConversationAgent", () => {
     );
   });
 
+  test("processUserMessage returns provider reasoning content on final responses", async () => {
+    mockCallProvider.mockImplementationOnce(async () => ({
+      ...mockProviderResponse(),
+      reasoningContent: "Reasoning returned by provider",
+    }));
+
+    const agent = makeAgent();
+
+    const { result } = await captureConsoleLog(() =>
+      agent.processUserMessage("Hello, I need help"),
+    );
+
+    expect(result.reasoningContent).toBe("Reasoning returned by provider");
+  });
+
   test("processUserMessage stores provider reasoning content on tool call responses", async () => {
     mockCallProvider
       .mockImplementationOnce(async () => ({

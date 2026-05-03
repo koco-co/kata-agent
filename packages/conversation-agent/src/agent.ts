@@ -30,6 +30,13 @@ export interface AgentConfig {
 
 export interface AgentCallbacks {
   onStreamToken?: (token: string) => void;
+  onReasoningToken?: (token: string) => void;
+}
+
+export interface AgentProcessResult {
+  messages: ChatMessage[];
+  finalResponse: string;
+  reasoningContent?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +90,9 @@ export class ConversationAgent {
       stream,
       ...(stream && callbacks?.onStreamToken
         ? { onStreamToken: callbacks.onStreamToken }
+        : {}),
+      ...(stream && callbacks?.onReasoningToken
+        ? { onReasoningToken: callbacks.onReasoningToken }
         : {}),
     };
   }
@@ -269,7 +279,7 @@ export class ConversationAgent {
   async processUserMessage(
     userMessage: string,
     callbacks: AgentCallbacks = {},
-  ): Promise<{ messages: ChatMessage[]; finalResponse: string }> {
+  ): Promise<AgentProcessResult> {
     // 1. Redact secrets
     const redactedMessage = this.redactor.redact(userMessage);
 
@@ -362,6 +372,9 @@ export class ConversationAgent {
         return {
           messages: await this.store.readMessages(this.sessionId),
           finalResponse,
+          ...(providerResult.reasoningContent !== undefined
+            ? { reasoningContent: providerResult.reasoningContent }
+            : {}),
         };
       }
 
