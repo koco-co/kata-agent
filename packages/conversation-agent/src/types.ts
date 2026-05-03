@@ -131,6 +131,12 @@ export type SlashCommand =
   | "title"
   | "sessions"
   | "resume"
+  | "test-run"
+  | "test-list"
+  | "test-gen"
+  | "scan"
+  | "report"
+  | "features"
   | "exit";
 
 // ---- Value exports (useful at runtime for iteration / validation) -----
@@ -162,5 +168,11 @@ export const ALL_SLASH_COMMANDS: SlashCommand[] = [
   "title",
   "sessions",
   "resume",
+  "test-run",
+  "test-list",
+  "test-gen",
+  "scan",
+  "report",
+  "features",
   "exit",
 ];

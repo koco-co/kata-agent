@@ -255,6 +255,12 @@ describe("SlashCommand type", () => {
     expect(commands).toContain("title");
     expect(commands).toContain("sessions");
     expect(commands).toContain("resume");
+    expect(commands).toContain("test-run");
+    expect(commands).toContain("test-list");
+    expect(commands).toContain("test-gen");
+    expect(commands).toContain("scan");
+    expect(commands).toContain("report");
+    expect(commands).toContain("features");
     expect(commands).toContain("exit");
   });
 });

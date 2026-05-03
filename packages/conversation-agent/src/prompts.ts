@@ -23,6 +23,12 @@ You can use the following slash commands at any time:
   /new       Start a new conversation session (resets context and yolo mode)
   /tools     List enabled toolsets and the tools available in each
   /yolo      Toggle yolo mode (enables/disables higher-permission tools)
+  /test-run  Run tests through test.run
+  /test-list List testing tools
+  /test-gen  Generate test cases through test.gen_cases
+  /scan      Run test/workspace risk scanning
+  /report    Generate a testing report
+  /features  List discovered feature files
   /exit      End the current conversation session
 `;
 

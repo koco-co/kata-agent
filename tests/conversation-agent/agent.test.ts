@@ -222,6 +222,40 @@ describe("ConversationAgent", () => {
     expect(result).toContain("exec");
   });
 
+  test('handleSlashCommand("/features") lists testing workspace features', async () => {
+    const agent = new ConversationAgent({
+      sessionDir: "/tmp/test-sessions",
+      workspaceRoot: "/tmp/test-workspace",
+      model: "test-model",
+      provider: "test-provider",
+      apiKey: "test-key",
+      testingWorkspace: {
+        root: "/tmp/test-workspace",
+        name: "demo",
+        status: "ready",
+        featureCount: 1,
+        specCount: 0,
+        caseAssetCount: 0,
+        reportCount: 0,
+        featureFiles: ["features/login.feature"],
+      },
+    });
+
+    const result = await agent.handleSlashCommand("/features");
+
+    expect(result).toContain("features/login.feature");
+  });
+
+  test('handleSlashCommand("/test-list") lists registered testing tools', async () => {
+    const agent = makeAgent({
+      tools: [makeTool({ name: "test.run", toolset: "qa-workflows" })],
+    });
+
+    const result = await agent.handleSlashCommand("/test-list");
+
+    expect(result).toContain("test.run");
+  });
+
   test('handleSlashCommand("/title <name>") stores a title for the current session', async () => {
     const agent = makeAgent();
 

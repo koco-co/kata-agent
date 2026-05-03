@@ -13,6 +13,10 @@ import { SecretRedactor } from "./secret-redactor";
 import { buildSystemPrompt } from "./prompts";
 import { callProvider, defaultProviderConfig, type ProviderConfig, type ProviderResponse } from "./provider";
 import type { TestingWorkspaceSummary } from "./testing/workspace";
+import {
+  handleTestingSlashCommand,
+  isTestingSlashCommand,
+} from "./testing/slash-commands";
 
 // ---------------------------------------------------------------------------
 // AgentConfig
@@ -198,6 +202,26 @@ export class ConversationAgent {
   async handleSlashCommand(command: string): Promise<string> {
     const trimmed = command.trim();
     const lower = trimmed.toLowerCase();
+
+    if (isTestingSlashCommand(trimmed)) {
+      const context = {
+        workspaceRoot: this.config.workspaceRoot,
+        sessionId: this.sessionId,
+        yolo: this.yolo,
+        env: {},
+      };
+      return handleTestingSlashCommand({
+        command: trimmed,
+        context,
+        workspace: this.config.testingWorkspace,
+        executeTool: (name, input, toolContext) =>
+          this.runtime.execute(name, input, toolContext),
+        listTestingTools: () =>
+          this.runtime.listTools()
+            .filter((tool) => tool.name.startsWith("test."))
+            .map((tool) => tool.name),
+      });
+    }
 
     switch (true) {
       // /help — show system prompt with available tools
