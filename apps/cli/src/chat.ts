@@ -14,7 +14,6 @@ import { createWorkflowTools } from "../../../packages/conversation-agent/src/to
 import { createArtifactTools } from "../../../packages/conversation-agent/src/tools/artifact-tools";
 import { createKnowledgeTools } from "../../../packages/conversation-agent/src/tools/knowledge-tools";
 import { createApprovalTool } from "../../../packages/conversation-agent/src/tools/approval-tools";
-import { createCodexExecTool } from "../../../packages/conversation-agent/src/tools/codex-exec-tool";
 
 const ANSI_GRAY = "\x1b[90m";
 const ANSI_RESET = "\x1b[0m";
@@ -159,9 +158,6 @@ export function startChat(options: ChatOptions = {}): void {
   // Approval tool (approval.request)
   const approvalTool = createApprovalTool(approvalDir);
   agent.registerTool(approvalTool);
-
-  // Codex delegator tool (codex.exec — delegates tasks to Codex CLI)
-  agent.registerTool(createCodexExecTool());
 
   // ---- Set up readline interface ----
 

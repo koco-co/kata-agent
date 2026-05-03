@@ -17,8 +17,7 @@ export type ToolsetName =
   | "artifacts"
   | "knowledge"
   | "external-plugins"
-  | "approvals"
-  | "delegation";
+  | "approvals";
 
 /** Context provided to every tool execution. */
 export interface ToolContext {
@@ -144,7 +143,6 @@ export const ALL_TOOLSETS: ToolsetName[] = [
   "knowledge",
   "external-plugins",
   "approvals",
-  "delegation",
 ];
 
 export const ALL_PERMISSIONS: ToolPermission[] = [
