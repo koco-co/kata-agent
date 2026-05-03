@@ -139,72 +139,72 @@ describe("ConversationAgent", () => {
   });
 
   // Test 3: handleSlashCommand("/help") returns help text
-  test('handleSlashCommand("/help") returns help text containing "Available Tools"', () => {
+  test('handleSlashCommand("/help") returns help text containing "Available Tools"', async () => {
     const agent = makeAgent({
       tools: [makeTool({ name: "read-file", toolset: "files" })],
     });
 
-    const result = agent.handleSlashCommand("/help");
+    const result = await agent.handleSlashCommand("/help");
 
     expect(result).toContain("Available Tools");
   });
 
   // Test 4: handleSlashCommand("/status") returns session info
-  test('handleSlashCommand("/status") returns session info containing session ID', () => {
+  test('handleSlashCommand("/status") returns session info containing session ID', async () => {
     const agent = makeAgent();
 
-    const result = agent.handleSlashCommand("/status");
+    const result = await agent.handleSlashCommand("/status");
 
     expect(result).toContain(agent.sessionId);
-    expect(result).toContain("Session");
+    expect(result).toContain("会话");
   });
 
   // Test 5: handleSlashCommand("/yolo") toggles yolo
-  test('handleSlashCommand("/yolo") toggles yolo mode', () => {
+  test('handleSlashCommand("/yolo") toggles yolo mode', async () => {
     const agent = makeAgent();
     expect(agent.yolo).toBe(false);
 
-    const result1 = agent.handleSlashCommand("/yolo");
+    const result1 = await agent.handleSlashCommand("/yolo");
     expect(agent.yolo).toBe(true);
-    expect(result1).toContain("enabled");
+    expect(result1).toContain("已启用");
 
-    const result2 = agent.handleSlashCommand("/yolo");
+    const result2 = await agent.handleSlashCommand("/yolo");
     expect(agent.yolo).toBe(false);
-    expect(result2).toContain("disabled");
+    expect(result2).toContain("已关闭");
   });
 
   // Test 6: handleSlashCommand("/new") creates new session
-  test('handleSlashCommand("/new") creates a new session', () => {
+  test('handleSlashCommand("/new") creates a new session', async () => {
     const agent = makeAgent();
     const originalId = agent.sessionId;
 
-    const result = agent.handleSlashCommand("/new");
+    const result = await agent.handleSlashCommand("/new");
 
     expect(agent.sessionId).not.toBe(originalId);
     expect(agent.yolo).toBe(false);
-    expect(result).toContain("New session");
+    expect(result).toContain("新会话");
   });
 
   // Test 7: handleSlashCommand unknown command
-  test('handleSlashCommand("/unknown") returns error message', () => {
+  test('handleSlashCommand("/unknown") returns error message', async () => {
     const agent = makeAgent();
 
-    const result = agent.handleSlashCommand("/unknown");
+    const result = await agent.handleSlashCommand("/unknown");
 
-    expect(result).toContain("Unknown command");
+    expect(result).toContain("未知命令");
   });
 
   // Test 8: handleSlashCommand("/exit") returns goodbye
-  test('handleSlashCommand("/exit") returns goodbye', () => {
+  test('handleSlashCommand("/exit") returns goodbye', async () => {
     const agent = makeAgent();
 
-    const result = agent.handleSlashCommand("/exit");
+    const result = await agent.handleSlashCommand("/exit");
 
-    expect(result).toContain("Goodbye");
+    expect(result).toContain("会话已结束");
   });
 
   // Test 9: handleSlashCommand("/tools") lists toolsets and tools
-  test('handleSlashCommand("/tools") lists enabled toolsets and tools', () => {
+  test('handleSlashCommand("/tools") lists enabled toolsets and tools', async () => {
     const agent = makeAgent({
       tools: [
         makeTool({ name: "read-file", toolset: "files" }),
@@ -213,13 +213,71 @@ describe("ConversationAgent", () => {
       ],
     });
 
-    const result = agent.handleSlashCommand("/tools");
+    const result = await agent.handleSlashCommand("/tools");
 
     expect(result).toContain("files");
     expect(result).toContain("shell");
     expect(result).toContain("read-file");
     expect(result).toContain("write-file");
     expect(result).toContain("exec");
+  });
+
+  test('handleSlashCommand("/title <name>") stores a title for the current session', async () => {
+    const agent = makeAgent();
+
+    const result = await agent.handleSlashCommand("/title 项目调研");
+    const sessions = await agent.store.getRecentSessions(10);
+    const current = sessions.find((session) => session.sessionId === agent.sessionId);
+
+    expect(result).toContain("项目调研");
+    expect(current?.name).toBe("项目调研");
+  });
+
+  test('handleSlashCommand("/sessions") lists recent sessions with name, message count, and time', async () => {
+    const agent = makeAgent();
+    await agent.store.saveMetadata("session-old", {
+      name: "较早会话",
+      messageCount: 2,
+      yolo: false,
+      enabledToolsets: ["files"],
+    });
+    await agent.store.saveMetadata("session-new", {
+      name: "较新会话",
+      messageCount: 5,
+      yolo: true,
+      enabledToolsets: ["files", "shell"],
+    });
+
+    const result = await agent.handleSlashCommand("/sessions");
+
+    expect(result).toContain("最近 10 个会话");
+    expect(result).toContain("session-new");
+    expect(result).toContain("较新会话");
+    expect(result).toContain("5 条消息");
+    expect(result).toContain("更新时间");
+  });
+
+  test('handleSlashCommand("/resume <sessionId>") restores session state from metadata', async () => {
+    const agent = makeAgent();
+    await agent.store.appendMessage("resume-target", {
+      role: "user",
+      content: "旧会话消息",
+    });
+    await agent.store.saveMetadata("resume-target", {
+      name: "目标会话",
+      yolo: true,
+      enabledToolsets: ["files"],
+    });
+    agent.yolo = false;
+    agent.enabledToolsets = ["shell"];
+
+    const result = await agent.handleSlashCommand("/resume resume-target");
+
+    expect(result).toContain("已恢复会话");
+    expect(result).toContain("resume-target");
+    expect(agent.sessionId).toBe("resume-target");
+    expect(agent.yolo).toBe(true);
+    expect(agent.enabledToolsets).toEqual(["files"]);
   });
 
   // Test 10: processUserMessage processes message and returns response

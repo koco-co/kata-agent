@@ -191,12 +191,15 @@ export class ConversationAgent {
 
   /**
    * Handle a slash command and return a text response.
+   * Some commands require async storage access for session metadata.
    */
-  handleSlashCommand(command: string): string {
-    const normalized = command.trim().toLowerCase();
+  async handleSlashCommand(command: string): Promise<string> {
+    const trimmed = command.trim();
+    const lower = trimmed.toLowerCase();
 
-    switch (normalized) {
-      case "/help": {
+    switch (true) {
+      // /help — show system prompt with available tools
+      case lower === "/help": {
         const prompt = buildSystemPrompt(
           this.runtime.listTools(),
           this.enabledToolsets,
@@ -204,52 +207,57 @@ export class ConversationAgent {
         return prompt;
       }
 
-      case "/status": {
+      // /status — show session info
+      case lower === "/status": {
         const toolsets = this.enabledToolsets.join(", ");
         return [
-          `## Session Status`,
+          `## 会话状态`,
           ``,
-          `**Session ID**: ${this.sessionId}`,
-          `**Yolo Mode**: ${this.yolo ? "enabled" : "disabled"}`,
-          `**Enabled Toolsets**: ${toolsets}`,
-          `**Model**: ${this.config.model} (${this.config.provider})`,
-          `**Max Iterations**: ${this.config.maxIterations}`,
-          `**Workspace**: ${this.config.workspaceRoot}`,
+          `**会话 ID**: ${this.sessionId}`,
+          `**Yolo 模式**: ${this.yolo ? "已启用" : "已关闭"}`,
+          `**已启用的工具集**: ${toolsets}`,
+          `**模型**: ${this.config.model} (${this.config.provider})`,
+          `**最大迭代次数**: ${this.config.maxIterations}`,
+          `**工作区**: ${this.config.workspaceRoot}`,
         ].join("\n");
       }
 
-      case "/new": {
+      // /new — reset session
+      case lower === "/new": {
         this.sessionId = randomUUID();
         this.yolo = false;
-        return "New session created. Previous context has been reset.";
+        return "已创建新会话，先前上下文已重置。";
       }
 
-      case "/yolo": {
+      // /yolo — toggle yolo mode
+      case lower === "/yolo": {
         this.yolo = !this.yolo;
         return this.yolo
-          ? "Yolo mode enabled. Higher-permission tools are now available."
-          : "Yolo mode disabled. Higher-permission tools require approval.";
+          ? "Yolo 模式已启用，高权限工具现已可用。"
+          : "Yolo 模式已关闭，高权限工具需要审批。";
       }
 
-      case "/exit":
-        return "Goodbye! Session ended.";
+      // /exit — end session
+      case lower === "/exit":
+        return "会话已结束。";
 
-      case "/tools": {
+      // /tools — list available tools
+      case lower === "/tools": {
         const tools = this.runtime.listTools();
         const lines: string[] = [];
-        lines.push("## Enabled Toolsets");
+        lines.push("## 已启用的工具集");
         lines.push("");
-        lines.push(`**Active toolsets**: ${this.enabledToolsets.join(", ")}`);
+        lines.push(`**当前工具集**: ${this.enabledToolsets.join(", ")}`);
         lines.push("");
 
         if (tools.length === 0) {
-          lines.push("No tools are currently registered.");
+          lines.push("暂无注册的工具。");
         } else {
-          lines.push("### Available Tools");
+          lines.push("### 可用工具");
           for (const t of tools) {
             const enabled = this.enabledToolsets.includes(t.toolset)
-              ? "enabled"
-              : "disabled";
+              ? "已启用"
+              : "已禁用";
             lines.push(
               `  - **${t.name}** [${t.toolset}] (${t.permission}) — ${t.description} [${enabled}]`,
             );
@@ -259,8 +267,57 @@ export class ConversationAgent {
         return lines.join("\n");
       }
 
+      // /title <name> — name the current session
+      case lower.startsWith("/title"): {
+        const name = trimmed.slice("/title".length).trim();
+        if (!name) {
+          return "请提供会话名称。用法：/title <会话名称>";
+        }
+        await this.store.saveMetadata(this.sessionId, { name });
+        return `当前会话已命名为"${name}"。`;
+      }
+
+      // /sessions — list recent sessions
+      case lower === "/sessions": {
+        const sessions = await this.store.getRecentSessions(10);
+        if (sessions.length === 0) {
+          return "暂无历史会话。";
+        }
+        const lines: string[] = [
+          "## 最近 10 个会话",
+          "",
+        ];
+        for (const s of sessions) {
+          const name = s.name ?? "(未命名)";
+          const count = s.messageCount;
+          const time = new Date(s.updatedAt).toLocaleString("zh-CN");
+          const yolo = s.yolo ? "Y" : "N";
+          lines.push(`  \`${s.sessionId}\` ${name} — ${count} 条消息 — 更新时间 ${time} — Y[${yolo}]`);
+        }
+        return lines.join("\n");
+      }
+
+      // /resume <sessionId> — resume a specific session
+      case lower.startsWith("/resume"): {
+        const sessionId = trimmed.slice("/resume".length).trim();
+        if (!sessionId) {
+          return "请提供要恢复的会话 ID。用法：/resume <会话 ID>";
+        }
+        const metadata = await this.store.getMetadata(sessionId);
+        if (!metadata) {
+          return `未找到会话"${sessionId}"。`;
+        }
+        this.sessionId = sessionId;
+        this.yolo = metadata.yolo ?? false;
+        if (metadata.enabledToolsets && metadata.enabledToolsets.length > 0) {
+          this.enabledToolsets = [...metadata.enabledToolsets];
+        }
+        const name = metadata.name ?? "(未命名)";
+        return `已恢复会话"${sessionId}"（${name}），包含 ${metadata.messageCount} 条消息。yolo=${this.yolo ? "开" : "关"}，工具集=[${this.enabledToolsets.join(", ")}]。`;
+      }
+
       default:
-        return `Unknown command: "${command}". Try /help to see available commands.`;
+        return `未知命令："${command}"。输入 /help 查看可用命令。`;
     }
   }
 

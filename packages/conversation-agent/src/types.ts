@@ -107,6 +107,17 @@ export interface SessionState {
   yolo: boolean;
 }
 
+/** Metadata persisted next to each session for listing and resume. */
+export interface SessionMetadata {
+  sessionId: string;
+  name?: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  enabledToolsets: ToolsetName[];
+  yolo: boolean;
+}
+
 // ---- Slash commands ---------------------------------------------------
 
 /** Recognised slash commands. */
@@ -117,6 +128,9 @@ export type SlashCommand =
   | "model"
   | "tools"
   | "yolo"
+  | "title"
+  | "sessions"
+  | "resume"
   | "exit";
 
 // ---- Value exports (useful at runtime for iteration / validation) -----
@@ -145,5 +159,8 @@ export const ALL_SLASH_COMMANDS: SlashCommand[] = [
   "model",
   "tools",
   "yolo",
+  "title",
+  "sessions",
+  "resume",
   "exit",
 ];

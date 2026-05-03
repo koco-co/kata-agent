@@ -10,9 +10,11 @@ import {
   appendFileSync,
   writeFileSync,
   unlinkSync,
+  readdirSync,
+  statSync,
 } from "fs";
 import { join, dirname } from "path";
-import type { ChatMessage } from "./types";
+import type { ChatMessage, SessionMetadata } from "./types";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -31,6 +33,13 @@ export interface SessionStoreOptions {
   maxMessages?: number;
   maxSessionSize?: number;
 }
+
+export type SessionMetadataPatch = Partial<
+  Pick<
+    SessionMetadata,
+    "name" | "messageCount" | "enabledToolsets" | "yolo"
+  >
+>;
 
 // ---------------------------------------------------------------------------
 // SessionStore
@@ -59,6 +68,10 @@ export class SessionStore {
 
   private archivePath(sessionId: string): string {
     return join(this.dir, `${sessionId}.archive.jsonl`);
+  }
+
+  private metadataPath(sessionId: string): string {
+    return join(this.dir, `${sessionId}.metadata.json`);
   }
 
   // ---- Lock management ----------------------------------------------------
@@ -180,6 +193,7 @@ export class SessionStore {
       if (messages.length > this.maxMessages) {
         this.archiveMessages(sPath, sessionId, messages);
       }
+      this.touchMetadataAfterAppend(sessionId, messages.length);
     } finally {
       this.releaseLock(sessionId);
     }
@@ -197,6 +211,98 @@ export class SessionStore {
     }
   }
 
+  /**
+   * Save display and resume metadata for a session.
+   */
+  async saveMetadata(
+    sessionId: string,
+    patch: SessionMetadataPatch = {},
+  ): Promise<SessionMetadata> {
+    await this.acquireLock(sessionId);
+    try {
+      const existing = this.readMetadataUnsafe(sessionId);
+      const messages = this.readMessagesUnsafe(this.sessionPath(sessionId));
+      const now = new Date().toISOString();
+      const next: SessionMetadata = {
+        sessionId,
+        ...(patch.name !== undefined
+          ? { name: patch.name }
+          : existing?.name !== undefined
+            ? { name: existing.name }
+            : {}),
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        messageCount:
+          patch.messageCount ?? existing?.messageCount ?? messages.length,
+        enabledToolsets:
+          patch.enabledToolsets ?? existing?.enabledToolsets ?? [],
+        yolo: patch.yolo ?? existing?.yolo ?? false,
+      };
+
+      this.writeMetadataUnsafe(next);
+      return next;
+    } finally {
+      this.releaseLock(sessionId);
+    }
+  }
+
+  /**
+   * Read metadata for a session. If no metadata file exists but the JSONL
+   * session exists, derive a minimal metadata record from the message file.
+   */
+  async getMetadata(sessionId: string): Promise<SessionMetadata | undefined> {
+    await this.acquireLock(sessionId);
+    try {
+      return this.readMetadataUnsafe(sessionId) ?? this.deriveMetadata(sessionId);
+    } finally {
+      this.releaseLock(sessionId);
+    }
+  }
+
+  /**
+   * Return recent sessions sorted by updated time descending.
+   */
+  async getRecentSessions(limit = 10): Promise<SessionMetadata[]> {
+    if (!existsSync(this.dir)) {
+      return [];
+    }
+
+    const sessions = new Map<string, SessionMetadata>();
+
+    for (const entry of readdirSync(this.dir)) {
+      if (entry.endsWith(".metadata.json")) {
+        const sessionId = entry.slice(0, -".metadata.json".length);
+        const metadata = this.readMetadataUnsafe(sessionId);
+        if (metadata) {
+          sessions.set(sessionId, metadata);
+        }
+      }
+    }
+
+    for (const entry of readdirSync(this.dir)) {
+      if (!entry.endsWith(".jsonl") || entry.endsWith(".archive.jsonl")) {
+        continue;
+      }
+      const sessionId = entry.slice(0, -".jsonl".length);
+      if (!sessions.has(sessionId)) {
+        const metadata = this.deriveMetadata(sessionId);
+        if (metadata) {
+          sessions.set(sessionId, metadata);
+        }
+      }
+    }
+
+    return Array.from(sessions.values())
+      .sort((a, b) => {
+        const byTime =
+          Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+        return byTime === 0
+          ? b.sessionId.localeCompare(a.sessionId)
+          : byTime;
+      })
+      .slice(0, limit);
+  }
+
   // ---- Internal helpers ---------------------------------------------------
 
   /**
@@ -210,6 +316,64 @@ export class SessionStore {
     const raw = readFileSync(sPath, "utf-8");
     const lines = raw.trim().split("\n").filter(Boolean);
     return lines.map((line) => JSON.parse(line) as ChatMessage);
+  }
+
+  private readMetadataUnsafe(sessionId: string): SessionMetadata | undefined {
+    const mPath = this.metadataPath(sessionId);
+    if (!existsSync(mPath)) {
+      return undefined;
+    }
+
+    try {
+      const raw = readFileSync(mPath, "utf-8");
+      return JSON.parse(raw) as SessionMetadata;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeMetadataUnsafe(metadata: SessionMetadata): void {
+    const mPath = this.metadataPath(metadata.sessionId);
+    mkdirSync(dirname(mPath), { recursive: true });
+    writeFileSync(mPath, JSON.stringify(metadata, null, 2) + "\n", "utf-8");
+  }
+
+  private deriveMetadata(sessionId: string): SessionMetadata | undefined {
+    const sPath = this.sessionPath(sessionId);
+    if (!existsSync(sPath)) {
+      return undefined;
+    }
+
+    const stat = statSync(sPath);
+    return {
+      sessionId,
+      createdAt: stat.birthtime.toISOString(),
+      updatedAt: stat.mtime.toISOString(),
+      messageCount: this.readMessagesUnsafe(sPath).length,
+      enabledToolsets: [],
+      yolo: false,
+    };
+  }
+
+  private touchMetadataAfterAppend(
+    sessionId: string,
+    messageCountAfterAppend: number,
+  ): void {
+    const existing = this.readMetadataUnsafe(sessionId);
+    const now = new Date().toISOString();
+    const metadata: SessionMetadata = {
+      sessionId,
+      ...(existing?.name !== undefined ? { name: existing.name } : {}),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      messageCount: existing
+        ? existing.messageCount + 1
+        : messageCountAfterAppend,
+      enabledToolsets: existing?.enabledToolsets ?? [],
+      yolo: existing?.yolo ?? false,
+    };
+
+    this.writeMetadataUnsafe(metadata);
   }
 
   /**

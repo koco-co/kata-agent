@@ -15,6 +15,7 @@ import type {
   ToolsetName,
   ToolContext,
   ChatMessage,
+  SessionMetadata,
   SlashCommand,
 } from "../../packages/conversation-agent/src/index";
 
@@ -170,6 +171,25 @@ describe("SessionState type", () => {
   });
 });
 
+describe("SessionMetadata type", () => {
+  test("tracks display name, counts, timestamps, and resumable state", () => {
+    const metadata: SessionMetadata = {
+      sessionId: "sess-meta",
+      name: "命名会话",
+      createdAt: "2026-05-03T00:00:00.000Z",
+      updatedAt: "2026-05-03T00:01:00.000Z",
+      messageCount: 3,
+      yolo: true,
+      enabledToolsets: ["files", "shell"],
+    };
+
+    expect(metadata.name).toBe("命名会话");
+    expect(metadata.messageCount).toBe(3);
+    expect(metadata.yolo).toBe(true);
+    expect(metadata.enabledToolsets).toEqual(["files", "shell"]);
+  });
+});
+
 describe("ChatMessage union type", () => {
   test("UserMessage shape", () => {
     const msg: ChatMessage = {
@@ -232,6 +252,9 @@ describe("SlashCommand type", () => {
     expect(commands).toContain("model");
     expect(commands).toContain("tools");
     expect(commands).toContain("yolo");
+    expect(commands).toContain("title");
+    expect(commands).toContain("sessions");
+    expect(commands).toContain("resume");
     expect(commands).toContain("exit");
   });
 });

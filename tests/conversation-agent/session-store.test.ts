@@ -147,4 +147,55 @@ describe("SessionStore", () => {
     expect((msgsA[1] as any).content).toBe("A2");
     expect((msgsB[0] as any).content).toBe("B1");
   });
+
+  test("saves session metadata and lists recent sessions", async () => {
+    const store = new SessionStore(join(TEST_DIR, "metadata"));
+
+    await store.appendMessage("meta-old", makeMsg("user", "旧消息 1"));
+    await store.appendMessage("meta-old", makeMsg("assistant", "旧消息 2"));
+    await store.saveMetadata("meta-old", {
+      name: "较早会话",
+      yolo: false,
+      enabledToolsets: ["files"],
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    await store.appendMessage("meta-new", makeMsg("user", "新消息"));
+    const saved = await store.saveMetadata("meta-new", {
+      name: "较新会话",
+      yolo: true,
+      enabledToolsets: ["files", "shell"],
+    });
+
+    const recent = await store.getRecentSessions(10);
+
+    expect(saved.sessionId).toBe("meta-new");
+    expect(saved.name).toBe("较新会话");
+    expect(saved.messageCount).toBe(1);
+    expect(saved.yolo).toBe(true);
+    expect(saved.enabledToolsets).toEqual(["files", "shell"]);
+    expect(recent[0].sessionId).toBe("meta-new");
+    expect(recent.map((session) => session.sessionId)).toContain("meta-old");
+  });
+
+  test("getRecentSessions respects the requested limit", async () => {
+    const store = new SessionStore(join(TEST_DIR, "metadata-limit"));
+
+    for (let i = 0; i < 12; i++) {
+      await store.saveMetadata(`meta-limit-${i}`, {
+        name: `会话 ${i}`,
+        messageCount: i,
+        yolo: false,
+        enabledToolsets: ["files"],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+
+    const recent = await store.getRecentSessions(10);
+
+    expect(recent).toHaveLength(10);
+    expect(recent[0].sessionId).toBe("meta-limit-11");
+    expect(recent.some((session) => session.sessionId === "meta-limit-0")).toBe(false);
+  });
 });
