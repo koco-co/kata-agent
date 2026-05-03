@@ -405,4 +405,17 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Tool Usage Rules");
     expect(prompt).toContain("safe");
   });
+
+  test("encourages batching independent tool calls", () => {
+    const tools: ConversationTool[] = [
+      makeTool({ name: "file_read", toolset: "files", permission: "safe" }),
+      makeTool({ name: "file_list", toolset: "files", permission: "safe" }),
+    ];
+
+    const prompt = buildSystemPrompt(tools, ["files"]);
+
+    expect(prompt).toContain("批量调用独立工具");
+    expect(prompt).toContain("一次性读取多个文件");
+    expect(prompt).toContain("减少迭代次数");
+  });
 });

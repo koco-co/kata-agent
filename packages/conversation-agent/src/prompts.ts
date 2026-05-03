@@ -35,6 +35,9 @@ const TOOL_USAGE_RULES = `
   - command: Requires yolo mode (user approval)
   - external: Always requires explicit user approval
 - Respect the tool's input schema and provide valid arguments.
+- 鼓励批量调用独立工具：当多个工具调用彼此没有依赖时，应在同一轮响应中一次性发出。
+- 示例：一次性读取多个文件、并行查看多个目录，或同时检查几份互不依赖的配置。
+- 批处理可以减少迭代次数，避免复杂任务过早触达 maxIterations 限制。
 `;
 
 // ---------------------------------------------------------------------------
