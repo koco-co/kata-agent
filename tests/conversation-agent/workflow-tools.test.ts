@@ -5,7 +5,10 @@
 import { describe, expect, test } from "bun:test";
 import type { ToolContext, ToolResult } from "../../packages/conversation-agent/src/types";
 
-import { createWorkflowTools } from "../../packages/conversation-agent/src/tools/workflow-tools";
+import {
+  createWorkflowTools,
+  type WorkflowToolController,
+} from "../../packages/conversation-agent/src/tools/workflow-tools";
 import { createArtifactTools } from "../../packages/conversation-agent/src/tools/artifact-tools";
 import { createKnowledgeTools } from "../../packages/conversation-agent/src/tools/knowledge-tools";
 
@@ -44,7 +47,51 @@ function fail(
 // ===========================================================================
 
 describe("workflow tools", () => {
-  const tools = createWorkflowTools();
+  const controller: WorkflowToolController = {
+    async start(input) {
+      return {
+        runId: input.runId ?? "run-1",
+        workflowName: input.workflowName,
+        status: "waiting",
+        currentNode: "await-confirmation-result",
+        project: input.project,
+        feature: input.feature,
+      };
+    },
+    async status(input) {
+      return {
+        runId: input.runId,
+        workflowName: "test-case-gen",
+        status: "waiting",
+        currentNode: "await-confirmation-result",
+        project: input.project,
+        feature: input.feature,
+      };
+    },
+    async resume(input) {
+      return {
+        runId: input.runId,
+        workflowName: "test-case-gen",
+        status: "succeeded",
+        project: input.project,
+        feature: input.feature,
+      };
+    },
+    async findRuns(input) {
+      return {
+        runs: [
+          {
+            runId: "run-1",
+            workflowName: input.workflowName ?? "test-case-gen",
+            status: "succeeded",
+            project: input.project,
+            feature: "rule-config",
+          },
+        ],
+      };
+    },
+  };
+  const tools = createWorkflowTools(controller);
 
   test("createWorkflowTools returns an object with four tools", () => {
     expect(tools).toHaveProperty("workflow_start");
@@ -85,21 +132,21 @@ describe("workflow tools", () => {
 
   // ---- workflow.start ----
 
-  test("workflow.start returns mock success with just workflowName", async () => {
+  test("workflow.start delegates to controller with just workflowName", async () => {
     const result = await tools.workflow_start.execute(
-      { workflowName: "qa-review" },
+      { workflowName: "test-case-gen" },
       ctx,
     );
     ok(result);
-    expect(result.summary).toMatch(/Started workflow qa-review/i);
+    expect(result.summary).toMatch(/Started workflow test-case-gen/i);
     expect((result.data as Record<string, unknown>)?.runId).toBeString();
-    expect((result.data as Record<string, unknown>)?.workflowName).toBe("qa-review");
+    expect((result.data as Record<string, unknown>)?.workflowName).toBe("test-case-gen");
   });
 
   test("workflow.start accepts optional project, feature, sourceUrl", async () => {
     const result = await tools.workflow_start.execute(
       {
-        workflowName: "code-review",
+        workflowName: "test-case-gen",
         project: "kata-agent",
         feature: "feat/nl-runtime",
         sourceUrl: "https://github.com/example/pr/42",
@@ -107,7 +154,7 @@ describe("workflow tools", () => {
       ctx,
     );
     ok(result);
-    expect((result.data as Record<string, unknown>)?.workflowName).toBe("code-review");
+    expect((result.data as Record<string, unknown>)?.workflowName).toBe("test-case-gen");
   });
 
   test("workflow.start returns error when workflowName is missing", async () => {
@@ -118,13 +165,13 @@ describe("workflow tools", () => {
 
   // ---- workflow.status ----
 
-  test("workflow.status returns mock status", async () => {
+  test("workflow.status delegates to controller", async () => {
     const result = await tools.workflow_status.execute(
-      { runId: "mock-run-1" },
+      { runId: "run-1" },
       ctx,
     );
     ok(result);
-    expect(result.summary).toMatch(/status|mock|run/i);
+    expect(result.summary).toMatch(/Status for run run-1: waiting/i);
   });
 
   test("workflow.status returns error when runId is missing", async () => {
@@ -135,13 +182,13 @@ describe("workflow tools", () => {
 
   // ---- workflow.resume ----
 
-  test("workflow.resume returns mock success", async () => {
+  test("workflow.resume delegates to controller", async () => {
     const result = await tools.workflow_resume.execute(
-      { runId: "mock-run-1" },
+      { runId: "run-1" },
       ctx,
     );
     ok(result);
-    expect(result.summary).toMatch(/resume|success|mock/i);
+    expect(result.summary).toMatch(/resumed with status: succeeded/i);
   });
 
   test("workflow.resume returns error when runId is missing", async () => {
@@ -152,7 +199,7 @@ describe("workflow tools", () => {
 
   // ---- workflow.find_runs ----
 
-  test("workflow.find_runs returns mock list", async () => {
+  test("workflow.find_runs delegates to controller", async () => {
     const result = await tools.workflow_find_runs.execute(
       { project: "kata-agent" },
       ctx,
@@ -164,6 +211,16 @@ describe("workflow tools", () => {
   test("workflow.find_runs works without optional params", async () => {
     const result = await tools.workflow_find_runs.execute({}, ctx);
     ok(result);
+  });
+
+  test("workflow tools report not wired when no controller is injected", async () => {
+    const unwired = createWorkflowTools();
+    const result = await unwired.workflow_start.execute(
+      { workflowName: "test-case-gen" },
+      ctx,
+    );
+    fail(result);
+    expect(result.error.code).toBe("ACTION_NOT_WIRED");
   });
 });
 

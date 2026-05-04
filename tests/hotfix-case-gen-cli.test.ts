@@ -129,6 +129,7 @@ describe("hotfix-case-gen CLI", () => {
       index.artifacts.map((artifact) => [artifact.type, artifact.path]).sort(),
     ).toEqual(
       [
+        ["HotfixCaseGenInput", "reports/hotfix-case-gen-input.json"],
         ["IssueDraft", "reports/issues/BUG-001.issue-draft.json"],
         ["SourceRepoRef", "reports/static-scan/source-repo-ref.json"],
         ["TestSpec", "test-spec/hotfix-test-spec.json"],

@@ -221,6 +221,32 @@ describe("file_write", () => {
 
     rmSync(join(workspaceRoot, "empty.txt"));
   });
+
+  test("rejects direct writes to managed feature artifact directories", async () => {
+    const tools = createFileTools(workspaceRoot);
+    const result = await tools.file_write.execute(
+      {
+        path: "projects/demo/features/rule-config/test-spec/test-spec.json",
+        content: "{}",
+      },
+      ctx,
+    );
+    fail(result);
+    expect(result.error.code).toBe("MANAGED_ARTIFACT_WRITE");
+  });
+
+  test("rejects direct writes to managed feature metadata files", async () => {
+    const tools = createFileTools(workspaceRoot);
+    const result = await tools.file_write.execute(
+      {
+        path: "projects/demo/features/rule-config/artifact-index.json",
+        content: "{}",
+      },
+      ctx,
+    );
+    fail(result);
+    expect(result.error.code).toBe("MANAGED_ARTIFACT_WRITE");
+  });
 });
 
 describe("file_list", () => {

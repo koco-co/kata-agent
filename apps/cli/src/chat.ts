@@ -4,13 +4,23 @@
 // ---------------------------------------------------------------------------
 
 import * as readline from "node:readline";
-import { existsSync, mkdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
+import YAML from "yaml";
+import { featureDir } from "../../../packages/artifact-repo/src/index";
 import { ConversationAgent } from "../../../packages/conversation-agent/src/agent";
 import { createFileTools } from "../../../packages/conversation-agent/src/tools/file-tools";
 import { createShellTool } from "../../../packages/conversation-agent/src/tools/shell-tools";
-import { createWorkflowTools } from "../../../packages/conversation-agent/src/tools/workflow-tools";
+import {
+  createWorkflowTools,
+  type WorkflowFindRunsInput,
+  type WorkflowRunLookupInput,
+  type WorkflowStartInput,
+  type WorkflowToolController,
+  type WorkflowToolRun,
+} from "../../../packages/conversation-agent/src/tools/workflow-tools";
 import { createArtifactTools } from "../../../packages/conversation-agent/src/tools/artifact-tools";
 import { createKnowledgeTools } from "../../../packages/conversation-agent/src/tools/knowledge-tools";
 import { createApprovalTool } from "../../../packages/conversation-agent/src/tools/approval-tools";
@@ -18,6 +28,12 @@ import {
   createTestingTools,
   discoverTestingWorkspace,
 } from "../../../packages/conversation-agent/src/testing";
+import {
+  createRuntimeServices,
+  loadWorkflowState,
+  type WorkflowDefinition,
+  type WorkflowRunState,
+} from "../../../packages/workflow-engine/src/index";
 import { createChatTestingActionBridge } from "./chat-testing-actions";
 
 const ANSI_GRAY = "\x1b[90m";
@@ -53,6 +69,187 @@ function ensureDir(dir: string): void {
 
 function readBooleanEnv(value: string | undefined): boolean {
   return value === "1" || value?.toLowerCase() === "true";
+}
+
+function loadWorkflowDefinition(
+  workspaceRoot: string,
+  workflowName: string,
+): WorkflowDefinition {
+  if (!/^[a-z0-9-]+$/.test(workflowName)) {
+    throw new Error(`Invalid workflow name: ${workflowName}`);
+  }
+  return YAML.parse(
+    readFileSync(
+      join(workspaceRoot, "workflows", `${workflowName}.yaml`),
+      "utf8",
+    ),
+  ) as WorkflowDefinition;
+}
+
+function parseFeatureDir(path: string): {
+  rootDir: string;
+  project: string;
+  feature: string;
+} {
+  const resolved = resolve(path);
+  return {
+    rootDir: dirname(dirname(dirname(dirname(resolved)))),
+    project: basename(dirname(dirname(resolved))),
+    feature: basename(resolved),
+  };
+}
+
+function stateToRun(
+  state: WorkflowRunState,
+  featureWorkspaceDir: string,
+): WorkflowToolRun {
+  const location = parseFeatureDir(featureWorkspaceDir);
+  return {
+    runId: state.runId,
+    workflowName: state.workflowId,
+    status: state.status,
+    currentNode: state.currentNode,
+    project: location.project,
+    feature: location.feature,
+    featureDir: featureWorkspaceDir,
+  };
+}
+
+function findWorkflowRun(
+  workspaceRoot: string,
+  input: WorkflowRunLookupInput | WorkflowFindRunsInput,
+): Array<{ state: WorkflowRunState; featureWorkspaceDir: string }> {
+  const results: Array<{
+    state: WorkflowRunState;
+    featureWorkspaceDir: string;
+  }> = [];
+  const projectsDir = join(workspaceRoot, "projects");
+  if (!existsSync(projectsDir)) return results;
+  for (const project of readdirSync(projectsDir)) {
+    if (input.project && project !== input.project) continue;
+    const featuresDir = join(projectsDir, project, "features");
+    if (!existsSync(featuresDir)) continue;
+    for (const feature of readdirSync(featuresDir)) {
+      if ("feature" in input && input.feature && feature !== input.feature) {
+        continue;
+      }
+      const featureWorkspaceDir = join(featuresDir, feature);
+      const stateDir = join(featureWorkspaceDir, ".state");
+      if (!existsSync(stateDir)) continue;
+      for (const file of readdirSync(stateDir)) {
+        if (!file.endsWith(".json")) continue;
+        const state = JSON.parse(
+          readFileSync(join(stateDir, file), "utf8"),
+        ) as WorkflowRunState;
+        if ("runId" in input && input.runId && state.runId !== input.runId) {
+          continue;
+        }
+        if (
+          "workflowName" in input &&
+          input.workflowName &&
+          state.workflowId !== input.workflowName
+        ) {
+          continue;
+        }
+        results.push({ state, featureWorkspaceDir });
+      }
+    }
+  }
+  return results;
+}
+
+function createChatWorkflowController(
+  workspaceRoot: string,
+): WorkflowToolController {
+  const locateRun = (input: WorkflowRunLookupInput) => {
+    if (input.featureDir) {
+      return {
+        featureWorkspaceDir: input.featureDir,
+        state: loadWorkflowState(input.featureDir, input.runId),
+      };
+    }
+    if (input.project && input.feature) {
+      const featureWorkspaceDir = featureDir({
+        rootDir: workspaceRoot,
+        project: input.project,
+        feature: input.feature,
+      });
+      return {
+        featureWorkspaceDir,
+        state: loadWorkflowState(featureWorkspaceDir, input.runId),
+      };
+    }
+    const [found] = findWorkflowRun(workspaceRoot, input);
+    if (!found) throw new Error(`Workflow run not found: ${input.runId}`);
+    return found;
+  };
+
+  return {
+    async start(input: WorkflowStartInput): Promise<WorkflowToolRun> {
+      if (!input.project) throw new Error("project is required");
+      if (!input.feature) throw new Error("feature is required");
+      const workflowName = input.workflowName;
+      const definition = loadWorkflowDefinition(workspaceRoot, workflowName);
+      const mode = input.mode ?? "mock";
+      const { executor } = createRuntimeServices({
+        rootDir: workspaceRoot,
+        mode,
+        requireProviderConfig: mode === "real",
+        notifyMode: "off",
+      });
+      const result = await executor.start({
+        location: {
+          rootDir: workspaceRoot,
+          project: input.project,
+          feature: input.feature,
+        },
+        definition,
+        runId: input.runId ?? randomUUID(),
+        sourceUrl: input.sourceUrl,
+        inputs: input.inputs,
+      });
+      return stateToRun(
+        result.state,
+        featureDir({
+          rootDir: workspaceRoot,
+          project: input.project,
+          feature: input.feature,
+        }),
+      );
+    },
+
+    async status(input: WorkflowRunLookupInput): Promise<WorkflowToolRun> {
+      const found = locateRun(input);
+      return stateToRun(found.state, found.featureWorkspaceDir);
+    },
+
+    async resume(input: WorkflowRunLookupInput): Promise<WorkflowToolRun> {
+      const found = locateRun(input);
+      const location = parseFeatureDir(found.featureWorkspaceDir);
+      const mode = input.mode ?? "mock";
+      const { executor } = createRuntimeServices({
+        rootDir: location.rootDir,
+        mode,
+        requireProviderConfig: mode === "real",
+        notifyMode: "off",
+      });
+      const result = await executor.resume({
+        location,
+        definition: loadWorkflowDefinition(location.rootDir, found.state.workflowId),
+        runId: input.runId,
+      });
+      return stateToRun(result.state, found.featureWorkspaceDir);
+    },
+
+    async findRuns(input: WorkflowFindRunsInput) {
+      return {
+        runs: findWorkflowRun(workspaceRoot, input)
+          .map((item) => stateToRun(item.state, item.featureWorkspaceDir))
+          .sort((a, b) => b.runId.localeCompare(a.runId))
+          .slice(0, 20),
+      };
+    },
+  };
 }
 
 export function formatChatResponseForTerminal(
@@ -146,7 +343,9 @@ export function startChat(options: ChatOptions = {}): void {
   agent.registerTool(shellTool);
 
   // Workflow tools (workflow.start, .status, .resume, .find_runs)
-  const workflowTools = createWorkflowTools();
+  const workflowTools = createWorkflowTools(
+    createChatWorkflowController(workspaceRoot),
+  );
   for (const tool of Object.values(workflowTools)) {
     agent.registerTool(tool);
   }

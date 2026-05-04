@@ -12,7 +12,7 @@ import {
   statSync,
   realpathSync,
 } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { relative, resolve, dirname, join } from "node:path";
 import type { ConversationTool, ToolResult, ToolContext } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -220,6 +220,58 @@ function isBinaryFile(filePath: string): boolean {
   }
 }
 
+const MANAGED_ARTIFACT_DIRS = new Set([
+  "sources",
+  "requirement",
+  "test-spec",
+  "automation",
+  "exports",
+  "reports",
+  "traces",
+  ".state",
+  ".history",
+]);
+
+const MANAGED_ARTIFACT_FILES = new Set(["artifact-index.json", "feature.yaml"]);
+
+function managedArtifactWriteError(
+  resolvedPath: string,
+  workspaceRoot: string,
+): ToolResult | null {
+  const path = relative(resolve(workspaceRoot), resolvedPath).replaceAll(
+    "\\",
+    "/",
+  );
+  const parts = path.split("/");
+  const projectsIndex = parts.indexOf("projects");
+  if (
+    projectsIndex < 0 ||
+    parts[projectsIndex + 2] !== "features" ||
+    !parts[projectsIndex + 3]
+  ) {
+    return null;
+  }
+  const featureRelative = parts.slice(projectsIndex + 4);
+  const firstSegment = featureRelative[0];
+  if (
+    MANAGED_ARTIFACT_FILES.has(featureRelative.join("/")) ||
+    MANAGED_ARTIFACT_DIRS.has(firstSegment)
+  ) {
+    return {
+      ok: false,
+      summary:
+        "Managed workflow artifacts must be written through ArtifactRepository",
+      error: {
+        code: "MANAGED_ARTIFACT_WRITE",
+        retryable: false,
+        message:
+          "Use workflow/artifact tools so artifact index, schema validation, hash, and write scopes stay consistent.",
+      },
+    };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Tool factory
 // ---------------------------------------------------------------------------
@@ -425,6 +477,12 @@ export function createFileTools(
       }
 
       try {
+        const managedError = managedArtifactWriteError(
+          check.resolved!,
+          workspaceRoot,
+        );
+        if (managedError) return managedError;
+
         mkdirSync(dirname(check.resolved!), { recursive: true });
         writeFileSync(check.resolved!, content, "utf-8");
         return {

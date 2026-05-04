@@ -146,6 +146,22 @@ function loadWorkflowDefinition(name = "test-case-gen"): WorkflowDefinition {
   ) as WorkflowDefinition;
 }
 
+function exitIfWorkflowFailed(
+  result: {
+    state: {
+      status: string;
+      currentNode?: string;
+      nodes: Record<string, { error?: string }>;
+    };
+  },
+): void {
+  if (result.state.status === "succeeded") return;
+  const currentNode = result.state.currentNode;
+  const error = currentNode ? result.state.nodes[currentNode]?.error : undefined;
+  console.error(error ?? `Workflow ended with status: ${result.state.status}`);
+  process.exit(1);
+}
+
 function parseFeatureDir(featureDir: string): {
   rootDir: string;
   project: string;
@@ -411,43 +427,23 @@ if (command === "static-scan") {
   const inspectionReportPath = "reports/static-scan/inspection-report.json";
 
   try {
-    const sourceRepo: SourceRepoRef = {
-      schemaVersion: "0.1",
-      repoId,
-      sourceRoot,
-      readOnly: true,
-    };
-    const sourceRepoRef = writeJsonArtifact(
+    const { executor } = createRuntimeServices({
+      rootDir,
+      mode: runtimeMode(),
+      requireProviderConfig: false,
+      notifyMode: notifyMode(),
+    });
+    const result = await executor.start({
       location,
-      "SourceRepoRef",
-      sourceRepoRefPath,
-      sourceRepo,
-      "static-scan",
-      { allowedScopes: ["feature.reports"] },
-    );
-    const input: StaticScanInput = {
-      schemaVersion: "0.1",
-      project,
-      feature,
-      sourceRepoRef: sourceRepoRef.id,
-      diffText: readFileSync(diffFile, "utf8"),
-    };
-    writeJsonArtifact(
-      location,
-      "StaticScanInput",
-      staticScanInputPath,
-      input,
-      "static-scan",
-      { allowedScopes: ["feature.reports"] },
-    );
-    writeJsonArtifact(
-      location,
-      "InspectionReport",
-      inspectionReportPath,
-      scanStaticDiff(input),
-      "static-scan",
-      { allowedScopes: ["feature.reports"] },
-    );
+      definition: loadWorkflowDefinition("static-scan"),
+      runId: argValue("--run") ?? randomUUID(),
+      inputs: {
+        repoId,
+        sourceRoot,
+        diffText: readFileSync(diffFile, "utf8"),
+      },
+    });
+    exitIfWorkflowFailed(result);
     console.log(
       JSON.stringify(
         { sourceRepoRefPath, staticScanInputPath, inspectionReportPath },
@@ -499,63 +495,23 @@ if (command === "report-gen") {
 
   try {
     assertValidSchema("ReportGenInput", input);
-    const runRecord = readJsonArtifact<RunRecord>(
+    const { executor } = createRuntimeServices({
+      rootDir: location.rootDir,
+      mode: runtimeMode(),
+      requireProviderConfig: false,
+      notifyMode: notifyMode(),
+    });
+    const result = await executor.start({
       location,
-      runRecordRef,
-      "RunRecord",
-    );
-    const evidencePack = readJsonArtifact<EvidencePack>(
-      location,
-      evidencePackRef,
-      "EvidencePack",
-    );
-    if (evidencePack.runRecordRef !== runRecordRef.id) {
-      throw new Error(
-        `EvidencePack does not reference RunRecord: ${evidencePack.runRecordRef} !== ${runRecordRef.id}`,
-      );
-    }
-    const reviewReport = readJsonArtifact<ReviewReport>(
-      location,
-      reviewReportRef,
-      "ReviewReport",
-    );
-    writeJsonArtifact(
-      location,
-      "BugReport",
-      bugReportPath,
-      buildBugReport(runRecord, evidencePack),
-      "report-gen",
-      { allowedScopes: ["feature.reports"] },
-    );
-    writeJsonArtifact(
-      location,
-      "AutomationFailureReport",
-      automationFailureReportPath,
-      buildAutomationFailureReport(runRecordRef.id, runRecord),
-      "report-gen",
-      { allowedScopes: ["feature.reports"] },
-    );
-    writeJsonArtifact(
-      location,
-      "ConflictReport",
-      conflictReportPath,
-      buildConflictReport(
-        reviewReportRef.id,
-        location.project,
-        location.feature,
-        reviewReport,
-      ),
-      "report-gen",
-      { allowedScopes: ["feature.reports"] },
-    );
-    writeArtifact(
-      location,
-      "AutomationReportMarkdown",
-      automationReportMarkdownPath,
-      renderAutomationReportMarkdown(runRecord),
-      "report-gen",
-      { allowedScopes: ["feature.reports"] },
-    );
+      definition: loadWorkflowDefinition("report-gen"),
+      runId: argValue("--run") ?? randomUUID(),
+      inputs: {
+        runRecordPath,
+        evidencePackPath,
+        reviewReportPath,
+      },
+    });
+    exitIfWorkflowFailed(result);
     console.log(
       JSON.stringify(
         {
@@ -603,37 +559,22 @@ if (command === "hotfix-case-gen") {
 
   try {
     assertValidSchema("HotfixCaseGenInput", input);
-    const issueDraft = readJsonArtifact<IssueDraft>(
+    const { executor } = createRuntimeServices({
+      rootDir: location.rootDir,
+      mode: runtimeMode(),
+      requireProviderConfig: false,
+      notifyMode: notifyMode(),
+    });
+    const result = await executor.start({
       location,
-      issueDraftRef,
-      "IssueDraft",
-    );
-    const sourceRepo = readJsonArtifact<SourceRepoRef>(
-      location,
-      sourceRepoRef,
-      "SourceRepoRef",
-    );
-    const testSpec = buildHotfixTestSpec(
-      issueDraftRef.id,
-      issueDraft,
-      sourceRepo,
-    );
-    writeJsonArtifact(
-      location,
-      "TestSpec",
-      testSpecPath,
-      testSpec,
-      "hotfix-case-gen",
-      { allowedScopes: ["feature.test-spec"] },
-    );
-    writeArtifact(
-      location,
-      "TestSpecMarkdown",
-      testSpecMarkdownPath,
-      renderTestSpecMarkdown(testSpec),
-      "hotfix-case-gen",
-      { allowedScopes: ["feature.test-spec"] },
-    );
+      definition: loadWorkflowDefinition("hotfix-case-gen"),
+      runId: argValue("--run") ?? randomUUID(),
+      inputs: {
+        issueDraftPath: issueDraftArtifactPath,
+        sourceRepoPath: sourceRepoArtifactPath,
+      },
+    });
+    exitIfWorkflowFailed(result);
     console.log(
       JSON.stringify({ testSpecPath, testSpecMarkdownPath }, null, 2),
     );
